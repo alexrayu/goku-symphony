@@ -1,11 +1,11 @@
 # phase-1-skeleton
 
 ## Status
-Phase 1 committed (22230a8); storage change below is uncommitted. Schema validate (--skip-sync), PHPStan level 8 and PHPUnit run clean inside the php container with `--no-deps`.
+Phase 1 and the storage change are committed on this branch. Schema validate (--skip-sync), PHPStan level 8 and PHPUnit run clean inside the php container with `--no-deps`.
 
 Storage decision changed by the user: local Flysystem adapter on a protected dir (`STORAGE_PATH`), no S3/MinIO. Originals login-only and never web-reachable; derivatives public via a controller; `X-Accel-Redirect` in phase 6. MinIO images were unpullable anyway. `make` targets now work end to end.
 
-Next: user commits the storage change, then write root `CLAUDE.md` per the brief, then phase 2.
+Root `CLAUDE.md` written (uncommitted, awaiting user commit). Next: phase 2 (domain + Doctrine) after approval of the plan.
 
 User-owned pieces left unwritten on purpose: `make check` target and the smoke test in `tests/`.
 
