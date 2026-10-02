@@ -6,7 +6,7 @@ Deferred until the vertical slice is live.
 
 - Image processing fallbacks: Imagick, then GD (with a size/`memory_limit` guard for long strips)
 - Doctrine Messenger transport + cron-driven `messenger:consume --time-limit`
-- Local-disk Flysystem adapter, files served through a controller
+- S3-compatible Flysystem adapter (optional offsite storage)
 - MariaDB/MySQL support: separate migration baseline, CI on both databases
 - Chunked upload (shared hosts cap upload size and request time)
 - Web installer: requirements check, DB credentials, admin user, writes `.env.local`, runs migrations, locks itself after success

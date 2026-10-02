@@ -12,17 +12,11 @@ services:
     environment:
       DATABASE_URL: postgresql://app:app@database:5432/app?serverVersion=${POSTGRES_VERSION}&charset=utf8
       MESSENGER_TRANSPORT_DSN: redis://redis:6379/messages
-      S3_ENDPOINT: http://minio:9000
-      S3_BUCKET: manga
-      S3_KEY: minioadmin
-      S3_SECRET: minioadmin
     depends_on:
       database:
         condition: service_healthy
       redis:
         condition: service_started
-      minio-init:
-        condition: service_completed_successfully
 
   database:
     image: postgres:${POSTGRES_VERSION}-alpine
@@ -43,32 +37,5 @@ services:
   redis:
     image: redis:${REDIS_VERSION}-alpine
 
-  minio:
-    image: quay.io/minio/minio
-    command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
-    healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-    ports:
-      - "9001:9001"
-    volumes:
-      - minio_data:/data
-
-  # One-shot bucket creation
-  minio-init:
-    image: quay.io/minio/mc
-    depends_on:
-      minio:
-        condition: service_healthy
-    entrypoint: >
-      /bin/sh -c "mc alias set local http://minio:9000 minioadmin minioadmin
-      && mc mb --ignore-existing local/manga"
-
 volumes:
   database_data:
-  minio_data:

@@ -29,8 +29,9 @@ as additional adapters, not as replacements.
   reason. Propose how to call it (php-vips via FFI vs. shelling out to `vipsthumbnail`) with
   the tradeoff, and let me choose.
 - **WebP derivatives only.** No AVIF — too CPU-heavy on one shared vCPU.
-- **Flysystem** with S3-compatible object storage — MinIO locally, S3-compatible in prod.
-  From day one; no local-disk shortcut.
+- **Flysystem** with the local adapter on a protected directory outside the web root
+  (`STORAGE_PATH`). Originals are never web-reachable; derivatives are served publicly
+  through a controller (Nginx `X-Accel-Redirect` in prod). Changed from S3/MinIO by the user.
 - **Twig + Turbo + Stimulus** via Symfony UX and **AssetMapper**. No Node build step, no React.
 - **EasyAdmin** for backoffice
 - **PHPStan level 8** with `phpstan/phpstan-doctrine`, **PHPUnit + Foundry**
@@ -91,7 +92,7 @@ Ugly is fine. Live is the requirement.
 
 ## Phases — stop at each checkpoint
 
-1. **Skeleton.** Symfony 7.4 project, Docker Compose (PHP, PostgreSQL 16, Redis, MinIO),
+1. **Skeleton.** Symfony 7.4 project, Docker Compose (PHP, PostgreSQL 16, Redis),
    PHPStan level 8 passing, PHPUnit running, `doctrine:schema:validate` in a make/composer
    script. **Checkpoint.**
 2. **Domain + Doctrine.** Entities, migrations, Foundry factories, EasyAdmin for Work and
