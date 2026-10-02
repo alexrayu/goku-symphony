@@ -1,0 +1,28 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/memory-load.sh\"",
+            "statusMessage": "Loading branch memory..."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/memory-check.sh\"",
+            "statusMessage": "Checking branch memory...",
+            "asyncRewake": true,
+            "rewakeMessage": "MEMORY REQUIRED: write or update .claude/memories/<branch>.md in this repo (not ~/.claude/tickets). Content rules: Memory policy in the global CLAUDE.md. The file is committed to a public repo: no secrets, credentials or private hostnames."
+          }
+        ]
+      }
+    ]
+  }
+}
