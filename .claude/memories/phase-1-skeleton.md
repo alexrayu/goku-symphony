@@ -1,13 +1,13 @@
 # phase-1-skeleton
 
 ## Status
-Phase 1 and the storage change are committed on this branch. Schema validate (--skip-sync), PHPStan level 8 and PHPUnit run clean inside the php container with `--no-deps`.
+Phase 1, root CLAUDE.md and phase 2 deps are committed. Phase 2 built but uncommitted: entities, applied migration, Foundry factories, ChapterPagesTest, EasyAdmin dashboard + Work/Chapter CRUD. Schema validate, PHPStan level 8 and PHPUnit pass. `/admin` is unauthenticated until phase 3.
 
-Storage decision changed by the user: local Flysystem adapter on a protected dir (`STORAGE_PATH`), no S3/MinIO. Originals login-only and never web-reachable; derivatives public via a controller; `X-Accel-Redirect` in phase 6. MinIO images were unpullable anyway. `make` targets now work end to end.
+Storage decision: local Flysystem adapter on a protected dir (`STORAGE_PATH`), no S3/MinIO. Originals never web-reachable; derivatives public via a controller; `X-Accel-Redirect` in phase 6.
 
-Root `CLAUDE.md` written (uncommitted, awaiting user commit). Next: phase 2 (domain + Doctrine) after approval of the plan.
+Next: query-count exercise, then the phase 2 checkpoint.
 
-User-owned pieces left unwritten on purpose: `make check` target and the smoke test in `tests/`.
+User-owned pieces left unwritten on purpose: `make check` target, the smoke test in `tests/`, `ChapterRepository::findPublishedWithPages()`, the page position-gap helper test.
 
 ## Gotchas
 - Composer's global GitHub token is stale; Flex recipe fetch 404s with it. Scaffold and require with a clean `COMPOSER_HOME`.
@@ -21,3 +21,5 @@ User-owned pieces left unwritten on purpose: `make check` target and the smoke t
 - Dev PHP container runs `php -S` (no FPM/Nginx until phase 6).
 - Added beyond the brief, user-approved: `symfony/test-pack`, `phpstan-symfony`, `phpstan-phpunit`.
 - Work happens on `phase-1-skeleton` because memory hooks skip `master`.
+- Phase 2 choices: `Chapter.number` is NUMERIC(6,1) (extras like 12.5); `Work.slug` unique; no cascade on `Work.chapters` (delete fails on FK on purpose); no roles column on `User`, `getRoles()` is constant; oneshot "exactly one Chapter" is enforced in a service later, not in the DB.
+- EasyAdmin's recipe pulled in security-bundle config; phase 3 rewrites it.
