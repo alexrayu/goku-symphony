@@ -5,9 +5,9 @@ Phase 1, root CLAUDE.md and phase 2 deps are committed. Phase 2 built but uncomm
 
 Storage decision: local Flysystem adapter on a protected dir (`STORAGE_PATH`), no S3/MinIO. Originals never web-reachable; derivatives public via a controller; `X-Accel-Redirect` in phase 6.
 
-Next: query-count exercise, then the phase 2 checkpoint.
+`ChapterRepository::findPublishedWithPages(Work)` written (fetch join, 1 query; ORM applies mapping OrderBy to the join) with test, uncommitted. Next: phase 2 checkpoint, then phase 3 (security).
 
-User-owned pieces left unwritten on purpose: `make check` target, the smoke test in `tests/`, `ChapterRepository::findPublishedWithPages()`, the page position-gap helper test.
+User-owned pieces left unwritten on purpose: `make check` target, the smoke test in `tests/`, the page position-gap helper test.
 
 ## Gotchas
 - Composer's global GitHub token is stale; Flex recipe fetch 404s with it. Scaffold and require with a clean `COMPOSER_HOME`.
