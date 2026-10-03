@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Enum\ReadingDirection;
+use App\Repository\ChapterRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: ChapterRepository::class)]
 #[ORM\Table(name: 'chapter')]
 #[ORM\UniqueConstraint(name: 'chapter_work_number', columns: ['work_id', 'number'])]
 class Chapter
