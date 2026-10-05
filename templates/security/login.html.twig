@@ -1,8 +1,10 @@
-{% extends 'base.html.twig' %}
+{% extends 'auth_layout.html.twig' %}
 
 {% block title %}Log in{% endblock %}
 
-{% block body %}
+{% block content %}
+    <h1>Log in</h1>
+
     <form method="post">
         {% if error %}
             <p role="alert">{{ error.messageKey|trans(error.messageData, 'security') }}</p>

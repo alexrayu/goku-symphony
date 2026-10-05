@@ -1,0 +1,25 @@
+{% extends 'auth_layout.html.twig' %}
+
+{% block title %}Install{% endblock %}
+
+{% block content %}
+    <h1>Set up the site</h1>
+    <p>Create the first user.</p>
+
+    <form method="post">
+        {% if error %}
+            <p role="alert">{{ error }}</p>
+        {% endif %}
+
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" value="{{ email }}" autocomplete="email" required autofocus>
+
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" autocomplete="new-password" required>
+
+        <label for="password_confirm">Confirm password</label>
+        <input type="password" id="password_confirm" name="password_confirm" autocomplete="new-password" required>
+
+        <button type="submit">Install</button>
+    </form>
+{% endblock %}
