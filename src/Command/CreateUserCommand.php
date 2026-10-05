@@ -43,8 +43,8 @@ final class CreateUserCommand
         }
 
         $password ??= $io->askHidden('Password');
-        if (null === $password || \strlen($password) < 12) {
-            $io->error('Password must be at least 12 characters.');
+        if (null === $password || '' === $password) {
+            $io->error('Password must not be empty.');
 
             return Command::INVALID;
         }

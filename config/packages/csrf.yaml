@@ -1,4 +1,4 @@
-# Enable stateless CSRF protection for forms and logins/logouts
+# Stateless CSRF for forms only (EasyAdmin ships the JS). Login/logout use session tokens: no JS in the login template.
 framework:
     form:
         csrf_protection:
@@ -7,5 +7,3 @@ framework:
     csrf_protection:
         stateless_token_ids:
             - submit
-            - authenticate
-            - logout
