@@ -6,7 +6,9 @@ framework:
             async: '%env(MESSENGER_TRANSPORT_DSN)%'
             failed: '%env(MESSENGER_TRANSPORT_DSN)%?stream=failed'
 
-        routing: {}
+        routing:
+            App\Ingest\Message\IngestArchive: async
+            App\Ingest\Message\GenerateDerivative: async
 
 when@test:
     framework:

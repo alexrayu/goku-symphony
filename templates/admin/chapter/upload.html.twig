@@ -1,0 +1,15 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{% block content_title %}Upload pages: {{ chapter }}{% endblock %}
+
+{% block main %}
+    <form method="post" enctype="multipart/form-data">
+        <input type="hidden" name="_token" value="{{ csrf_token('chapter_upload') }}">
+        <div class="mb-3">
+            <label class="form-label" for="archive">ZIP or CBZ archive</label>
+            <input class="form-control" type="file" id="archive" name="archive" accept=".zip,.cbz" required>
+            <div class="form-text">Images are ordered by file name, naturally (page_2 before page_10).</div>
+        </div>
+        <button class="btn btn-primary" type="submit">Upload</button>
+    </form>
+{% endblock %}

@@ -1,0 +1,27 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Ingest;
+
+use App\Entity\Chapter;
+use App\Entity\Page;
+
+// Storage layout in one place. Keys, never URLs: URLs come from the URL generator (phase 5).
+final class StorageKeys
+{
+    public static function incoming(Chapter $chapter): string
+    {
+        return sprintf('incoming/%d/%s.zip', $chapter->getId(), bin2hex(random_bytes(8)));
+    }
+
+    public static function original(Chapter $chapter, string $extension): string
+    {
+        return sprintf('originals/%d/%s.%s', $chapter->getId(), bin2hex(random_bytes(8)), strtolower($extension));
+    }
+
+    public static function derivative(Page $page): string
+    {
+        return sprintf('derivatives/%d/%d.webp', $page->getChapter()->getId(), $page->getId());
+    }
+}

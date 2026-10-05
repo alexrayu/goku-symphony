@@ -1,0 +1,17 @@
+{# Detail-page listing of a chapter's pages with their processing status. #}
+{% if field.value is empty %}
+    <span class="text-muted">No pages yet.</span>
+{% else %}
+    <table class="table table-sm">
+        <thead><tr><th>Position</th><th>Status</th><th>Size</th></tr></thead>
+        <tbody>
+        {% for page in field.value %}
+            <tr>
+                <td>{{ page.position }}</td>
+                <td>{{ page.status.value }}</td>
+                <td>{{ page.width is null ? '' : page.width ~ ' × ' ~ page.height }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endif %}

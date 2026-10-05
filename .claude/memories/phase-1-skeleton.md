@@ -1,35 +1,39 @@
 # phase-1-skeleton
 
 ## Status
-Phase 1, root CLAUDE.md and phase 2 deps are committed. Phase 2 built but uncommitted: entities, applied migration, Foundry factories, ChapterPagesTest, EasyAdmin dashboard + Work/Chapter CRUD. Schema validate, PHPStan level 8 and PHPUnit pass. `/admin` is unauthenticated until phase 3.
+Phases 1-3 committed (skeleton, domain + EasyAdmin, auth + first-run installer).
 
-Storage decision: local Flysystem adapter on a protected dir (`STORAGE_PATH`), no S3/MinIO. Originals never web-reachable; derivatives public via a controller; `X-Accel-Redirect` in phase 6.
+Phase 4 (ingestion) built, uncommitted. PHPStan level 8 clean. Verified end to end in headless Chromium with a live worker: upload a ZIP on a Chapter, worker extracts, natural order, WebP derivatives, all pages `ready`. 10 of 11 tests pass; the pipeline test fails until the user writes `ArchivePageOrder::sort()` (stub throws LogicException on purpose). Real uploads also fail in the worker until then. Next: user writes sort + its unit test, phase 4 checkpoint, then phase 5 (reader).
 
-`ChapterRepository::findPublishedWithPages(Work)` written (fetch join, 1 query; ORM applies mapping OrderBy to the join) with test.
+Dev DB has a demo "E2E Test Work" with chapter 1 and 4 processed pages (files in `var/storage`), left for the user to look at.
 
-Phase 3 (security) built, uncommitted: form_login + CSRF, logout, login_throttling (5 attempts), `/admin` requires ROLE_USER, login template, `app:user:create` command (non-empty password only, no length rule by user's choice). PHPStan level 8 passes; `debug:router` shows login/logout; command rejects a bad email. PHPUnit not rerun, browser flow not yet checked by the user (php container was down; `make up` first). Next: user reviews phase 3 checkpoint, then phase 4.
+User-owned pieces left unwritten on purpose: `make check` target, smoke test in `tests/`, page position-gap helper test, phase 3 login functional test (UserFactory password is "!", so use `loginUser()` or add a hashed default), phase 4 `ArchivePageOrder::sort()` + `tests/Ingest/ArchivePageOrderTest.php`.
 
-User-owned pieces left unwritten on purpose: `make check` target, the smoke test in `tests/`, the page position-gap helper test, phase 3 login functional test (anon /admin redirect, good login, bad login; UserFactory may need a hashed-password default).
+Open question to the user: trim the `LATER.md` web-installer line to what is left (requirements check, DB credentials, `.env.local`, migrations).
 
 ## Gotchas
-- Composer's global GitHub token is stale; Flex recipe fetch 404s with it. Scaffold and require with a clean `COMPOSER_HOME`.
-- `doctrine-bundle` pulls Symfony 8.1 components (clock, doctrine-bridge, options-resolver, stopwatch). Keep all `symfony/*` at 7.4; recheck the lock after any `composer require`.
-- Do not set `config.platform.php` below the container's PHP patch version; packages needing `>=8.4.1` then fail to install.
+- Composer's global GitHub token is stale; Flex recipe fetch 404s with it. Require with a clean `COMPOSER_HOME` (`-e COMPOSER_HOME=/tmp/ch`), and quote version constraints in zsh.
+- `doctrine-bundle` pulls Symfony 8.x components. Keep all `symfony/*` at 7.4; recheck the lock after any `composer require`.
+- Do not set `config.platform.php` below the container's PHP patch version.
 - `versions.env` is passed with `--env-file`; Compose's default `.env` is Symfony's.
-- Repo `.gitignore` is Symfony's; the original ignored `.claude`, which would exclude these committed memories.
+- Repo `.gitignore` is Symfony's; the original ignored `.claude`, which would exclude these memories.
 - `tests/bootstrap.php` lost the recipe's `method_exists` guard because level 8 flags it.
+- zsh does not word-split `$VAR` holding a command; use a shell function (`dc(){ docker compose --env-file versions.env "$@"; }`).
+- `csrf.yaml`: only `submit` is stateless. Stateless tokens need the Stimulus csrf controller (no `assets/` yet); login broke with "Invalid CSRF token" while `authenticate` was listed. Custom admin forms use session token ids (e.g. `chapter_upload`).
+- Installer subscriber runs at priority 64: the router (32) 404s `/` before a later listener, and the firewall (8) would send `/admin` to `/login` first.
+- Functional tests of public pages need a user in the DB, or they redirect to `/install`. `InstallState` caches only "installed"; `cache:clear` does NOT clear cache.app, use `cache:pool:clear cache.app`.
+- Flysystem is autowired only by name (`FilesystemOperator $defaultStorage`); in tests fetch `'default.storage'`. Test env writes to `var/storage-test` (`.env.test`).
+- Foundry 2 factories return real entities; no `_real()`.
+- Tests using the in-memory transport across requests need `$client->disableReboot()`.
+- EasyAdmin `NumberField` on a DECIMAL (string) needs `setStoredAsString()` plus `setNumberFormat()`; the Intl formatter only accepts int|float. Chapter "new" also crashed on an unmanaged placeholder Work; now preselects the newest Work (409 if none) with number "1".
+- `/admin` redirects to the Work list; tests expect `/admin` -> 302 `/admin/work`.
 
 ## Decisions
-- Dev PHP container runs `php -S` (no FPM/Nginx until phase 6).
-- Added beyond the brief, user-approved: `symfony/test-pack`, `phpstan-symfony`, `phpstan-phpunit`.
+- Dev PHP container runs `php -S` (no FPM/Nginx until phase 6). Uploads capped at 200M via `conf.d/uploads.ini` in the Dockerfile; prod Nginx needs matching `client_max_body_size`.
+- Added beyond the brief, user-approved: `symfony/test-pack`, `phpstan-symfony`, `phpstan-phpunit`, `symfony/rate-limiter` (login throttling), `symfony/process` (vips CLI).
 - Work happens on `phase-1-skeleton` because memory hooks skip `master`.
-- Phase 2 choices: `Chapter.number` is NUMERIC(6,1) (extras like 12.5); `Work.slug` unique; no cascade on `Work.chapters` (delete fails on FK on purpose); no roles column on `User`, `getRoles()` is constant; oneshot "exactly one Chapter" is enforced in a service later, not in the DB.
-- EasyAdmin's recipe pulled in security-bundle config; phase 3 rewrote it.
-- `config/packages/csrf.yaml` (EasyAdmin recipe) listed `authenticate`/`logout` as stateless token ids; stateless tokens need the Stimulus csrf controller (no `assets/` yet), so login always failed "Invalid CSRF token". Now only `submit` is stateless. Re-add them only together with the UX Stimulus bridge.
-- Phase 3 login flow verified by curl (anon redirect, bad csrf, bad password, login, logout, throttle). After login the redirect goes to `/`, which has no route yet.
-- Installer (user-approved override of "installer out of scope" and "users by console only"): empty `app_user` redirects every path to `/install`; open form (email + password + confirm) creates only the first user, logs in, redirects to `/admin`. Install token was built then removed at user's request: the installer is claimable by whoever reaches it first, so install before a public droplet is reachable. Scope is first user only, no migrations/env writing (Docker/Ansible own those). `UserProvisioner` is the shared creation path (command + installer).
-- Installer subscriber runs at priority 64 on purpose: the router (32) throws 404 for `/` before a later listener could redirect, and the firewall (8) would otherwise send `/admin` to `/login` first.
-- Gotcha: any future functional test of public pages needs a user in the DB, or it gets redirected to `/install`. `InstallState` caches only "installed = true" (array cache in test env); after deleting all users in dev, run `bin/console cache:pool:clear cache.app` (not `cache:clear`) to see the installer again.
-- Dev user ids are not 1 after earlier test users (sequence keeps counting); only a fresh DB gives id 1.
-- Browser testing: no Chrome MCP here. Headless Chromium via Playwright in a Python venv in the scratchpad (system Node 18 is too old for current npm playwright; do not upgrade system Node). Cached browser at `~/.cache/ms-playwright/chromium-1208`.
-- Added `symfony/rate-limiter` (required by `login_throttling`); lock verified free of symfony/* 8.x afterwards.
+- Phase 2: `Chapter.number` NUMERIC(6,1); `Work.slug` unique; no cascade on `Work.chapters`; no roles column, `getRoles()` constant; oneshot rule enforced in a service later.
+- Installer (user-approved override of "installer out of scope" / "users by console only"): open form, first user only, no token (user removed it; install before a droplet is public). `UserProvisioner` is the one user-creation path.
+- Phase 4: libvips via CLI + `symfony/process`, not FFI. One WebP, max 1200 wide, Q80, never upscaled, height capped at 16383 (WebP limit) so very tall strips get narrower (a 900x30000 strip becomes 491x16383); slicing strips is a later candidate. Stored dimensions are the derivative's. Re-upload to a chapter with pages is rejected. Originals and derivatives use generated keys (no entry names: no traversal); 64 MB uncompressed cap per entry. Final derivative failure sets page `failed` via a WorkerMessageFailedEvent listener. Derivative key is derived (`derivatives/{chapter}/{page}.webp`), no column.
+- Deleting a chapter removes page rows (cascade) but not storage files; not handled yet.
+- Browser testing: no Chrome MCP. Headless Chromium via Playwright in a Python venv in the scratchpad (system Node 18 too old for npm playwright; do not upgrade system Node). Cached browser at `~/.cache/ms-playwright/chromium-1208`. Run a worker with `messenger:consume async --time-limit=300` in the background.

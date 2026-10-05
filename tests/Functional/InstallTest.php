@@ -47,8 +47,9 @@ final class InstallTest extends WebTestCase
         UserFactory::assert()->count(1);
         UserFactory::assert()->exists(['email' => 'artist@example.com']);
 
+        // Logged in: the dashboard forwards to the Work list instead of the login form.
         $client->request('GET', '/admin');
-        self::assertResponseIsSuccessful();
+        self::assertResponseRedirects('/admin/work');
 
         $client->request('GET', '/install');
         self::assertResponseRedirects('/login');
