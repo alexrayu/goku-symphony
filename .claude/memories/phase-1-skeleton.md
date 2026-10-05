@@ -3,11 +3,11 @@
 ## Status
 Phases 1-3 committed (skeleton, domain + EasyAdmin, auth + first-run installer).
 
-Phase 4 (ingestion) built, uncommitted. PHPStan level 8 clean. Verified end to end in headless Chromium with a live worker: upload a ZIP on a Chapter, worker extracts, natural order, WebP derivatives, all pages `ready`. 10 of 11 tests pass; the pipeline test fails until the user writes `ArchivePageOrder::sort()` (stub throws LogicException on purpose). Real uploads also fail in the worker until then. Next: user writes sort + its unit test, phase 4 checkpoint, then phase 5 (reader).
+Phase 4 (ingestion) built, uncommitted. PHPStan level 8 clean. Verified end to end in headless Chromium with a live worker: upload a ZIP on a Chapter, worker extracts, natural order, WebP derivatives, all pages `ready`. All 16 tests pass. Next: phase 4 checkpoint (user commits), then phase 5 (reader).
 
 Dev DB has a demo "E2E Test Work" with chapter 1 and 4 processed pages (files in `var/storage`), left for the user to look at.
 
-User-owned pieces left unwritten on purpose: `make check` target, smoke test in `tests/`, page position-gap helper test, phase 3 login functional test (UserFactory password is "!", so use `loginUser()` or add a hashed default), phase 4 `ArchivePageOrder::sort()` + `tests/Ingest/ArchivePageOrderTest.php`.
+User-owned pieces left unwritten on purpose: `make check` target, smoke test in `tests/`, page position-gap helper test, phase 3 login functional test (UserFactory password is "!", so use `loginUser()` or add a hashed default). `ArchivePageOrder::sort()` + its test were meant for the user, but they asked Claude to write them and will study them later.
 
 Open question to the user: trim the `LATER.md` web-installer line to what is left (requirements check, DB credentials, `.env.local`, migrations).
 
