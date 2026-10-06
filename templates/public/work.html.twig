@@ -1,0 +1,19 @@
+{% extends 'public/layout.html.twig' %}
+
+{% block title %}{{ work.title }}{% endblock %}
+
+{% block main %}
+    <main>
+        <h1>{{ work.title }}</h1>
+        {% if work.description %}<p>{{ work.description }}</p>{% endif %}
+        <ul class="list">
+            {% for chapter in chapters %}
+                <li>
+                    <a href="{{ path('chapter_read', {slug: work.slug, number: chapter.numberLabel}) }}">
+                        Chapter {{ chapter.numberLabel }}{% if chapter.title %}: {{ chapter.title }}{% endif %}
+                    </a>
+                </li>
+            {% endfor %}
+        </ul>
+    </main>
+{% endblock %}

@@ -3,9 +3,11 @@
 ## Status
 Phases 1-3 committed (skeleton, domain + EasyAdmin, auth + first-run installer).
 
-Phase 4 (ingestion) built, uncommitted. PHPStan level 8 clean. Verified end to end in headless Chromium with a live worker: upload a ZIP on a Chapter, worker extracts, natural order, WebP derivatives, all pages `ready`. All 16 tests pass. Next: phase 4 checkpoint (user commits), then phase 5 (reader).
+Phase 4 (ingestion) committed (a033e81). PHPStan level 8 clean. Verified end to end in headless Chromium with a live worker: upload a ZIP on a Chapter, worker extracts, natural order, WebP derivatives, all pages `ready`. All tests pass.
 
-Dev DB has a demo "E2E Test Work" with chapter 1 and 4 processed pages (files in `var/storage`), left for the user to look at.
+Phase 5 (reader) built, uncommitted, verified in headless Chromium (anonymous): `/` lists works with published chapters, `/w/{slug}` lists chapters (oneshot: reader in place), `/w/{slug}/{number}` reader, `/media/page/{id}.webp` streams derivatives. 21 tests pass, PHPStan clean. Lazy loading is native `loading="lazy"` (user said continue without picking; recommended option), no Stimulus/AssetMapper yet. Next: phase 5 checkpoint. Query-count prediction asked 2026-10-06 (chapter URL vs oneshot URL, dev env), awaiting the user's numbers; then the user commits phase 5, then phase 6 (Ansible/prod).
+
+Dev DB has a demo oneshot "E2E Test Work", chapter 1 published, 4 labelled pages ("Page 1", "Page 2", "Page 10", tall strip) at `/w/e2e-test-work`.
 
 User-owned pieces left unwritten on purpose: `make check` target, smoke test in `tests/`, page position-gap helper test, phase 3 login functional test (UserFactory password is "!", so use `loginUser()` or add a hashed default). `ArchivePageOrder::sort()` + its test were meant for the user, but they asked Claude to write them and will study them later.
 
@@ -27,6 +29,9 @@ Open question to the user: trim the `LATER.md` web-installer line to what is lef
 - Tests using the in-memory transport across requests need `$client->disableReboot()`.
 - EasyAdmin `NumberField` on a DECIMAL (string) needs `setStoredAsString()` plus `setNumberFormat()`; the Intl formatter only accepts int|float. Chapter "new" also crashed on an unmanaged placeholder Work; now preselects the newest Work (409 if none) with number "1".
 - `/admin` redirects to the Work list; tests expect `/admin` -> 302 `/admin/work`.
+- `symfony/web-profiler-bundle` is NOT installed (no toolbar). Test env enables the core profiler (`framework.profiler.collect: false`); tests call `enableProfiler()`. The first request shares the kernel with Foundry, so reset `doctrine.debug_data_holder` and clear the EM before a counted request, or setup INSERTs count and initialized collections skip ORDER BY.
+- Reader query count is 3 per request in tests: installed check (array cache in test; cached in dev/prod, so 2 there), work by slug, chapter + pages fetch join.
+- Reader CSS uses `max-width: 100%` on pages, not `width: 100%`: narrow strips must not be upscaled.
 
 ## Decisions
 - Dev PHP container runs `php -S` (no FPM/Nginx until phase 6). Uploads capped at 200M via `conf.d/uploads.ini` in the Dockerfile; prod Nginx needs matching `client_max_body_size`.
@@ -36,4 +41,5 @@ Open question to the user: trim the `LATER.md` web-installer line to what is lef
 - Installer (user-approved override of "installer out of scope" / "users by console only"): open form, first user only, no token (user removed it; install before a droplet is public). `UserProvisioner` is the one user-creation path.
 - Phase 4: libvips via CLI + `symfony/process`, not FFI. One WebP, max 1200 wide, Q80, never upscaled, height capped at 16383 (WebP limit) so very tall strips get narrower (a 900x30000 strip becomes 491x16383); slicing strips is a later candidate. Stored dimensions are the derivative's. Re-upload to a chapter with pages is rejected. Originals and derivatives use generated keys (no entry names: no traversal); 64 MB uncompressed cap per entry. Final derivative failure sets page `failed` via a WorkerMessageFailedEvent listener. Derivative key is derived (`derivatives/{chapter}/{page}.webp`), no column.
 - Deleting a chapter removes page rows (cascade) but not storage files; not handled yet.
+- Phase 5: media controller checks published (or logged in) per image request: one PK query, so drafts are not guessable by id. Published images get `public, max-age=1y, immutable` (new upload = new page ids); drafts `private, no-store`. Phase 6 keeps the PHP check and swaps the body for `X-Accel-Redirect`. All image URLs come from `PageImageUrlGenerator` (Twig `page_image_url()`). Reader filters non-ready pages in PHP, not in the fetch-join WHERE (partial collection trap). `Chapter::getNumberLabel()` drops ".0" for URLs/headings.
 - Browser testing: no Chrome MCP. Headless Chromium via Playwright in a Python venv in the scratchpad (system Node 18 too old for npm playwright; do not upgrade system Node). Cached browser at `~/.cache/ms-playwright/chromium-1208`. Run a worker with `messenger:consume async --time-limit=300` in the background.

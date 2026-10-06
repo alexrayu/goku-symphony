@@ -1,0 +1,31 @@
+{% extends 'public/layout.html.twig' %}
+
+{% set oneshot = work.type.value == 'oneshot' %}
+
+{% block title %}{{ oneshot ? work.title : work.title ~ ' - Chapter ' ~ chapter.numberLabel }}{% endblock %}
+
+{% block crumbs %}
+    {% if oneshot %}
+        <span>{{ work.title }}</span>
+    {% else %}
+        <a href="{{ path('work_show', {slug: work.slug}) }}">{{ work.title }}</a>
+        <span class="muted">Chapter {{ chapter.numberLabel }}{% if chapter.title %}: {{ chapter.title }}{% endif %}</span>
+    {% endif %}
+{% endblock %}
+
+{% block main %}
+    <main class="reader">
+        <div class="pages">
+            {# First pages load eagerly (above the fold); the rest lazily as the reader scrolls. #}
+            {% for page in pages %}
+                <img src="{{ page_image_url(page) }}" width="{{ page.width }}" height="{{ page.height }}"
+                     alt="Page {{ loop.index }}" decoding="async"{% if loop.index > 2 %} loading="lazy"{% endif %}>
+            {% else %}
+                <p class="reader-end muted">No pages yet.</p>
+            {% endfor %}
+        </div>
+        {% if not oneshot %}
+            <p class="reader-end"><a href="{{ path('work_show', {slug: work.slug}) }}">Back to chapters</a></p>
+        {% endif %}
+    </main>
+{% endblock %}

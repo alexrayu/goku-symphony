@@ -81,6 +81,12 @@ class Chapter
         return $this;
     }
 
+    // "12.0" -> "12", "12.5" stays: the form used in URLs and headings.
+    public function getNumberLabel(): string
+    {
+        return str_contains($this->number, '.') ? rtrim(rtrim($this->number, '0'), '.') : $this->number;
+    }
+
     public function getTitle(): ?string
     {
         return $this->title;

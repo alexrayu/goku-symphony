@@ -11,5 +11,7 @@ framework:
 when@test:
     framework:
         test: true
+        # Off per request; tests opt in with $client->enableProfiler() to count queries.
+        profiler: { collect: false }
         session:
             storage_factory_id: session.storage.factory.mock_file

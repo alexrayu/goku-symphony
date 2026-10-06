@@ -1,0 +1,18 @@
+{% extends 'public/layout.html.twig' %}
+
+{% block title %}Goku{% endblock %}
+
+{% block main %}
+    <main>
+        <h1>Works</h1>
+        {% if works is empty %}
+            <p class="muted">Nothing published yet.</p>
+        {% else %}
+            <ul class="list">
+                {% for work in works %}
+                    <li><a href="{{ path('work_show', {slug: work.slug}) }}">{{ work.title }}</a></li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </main>
+{% endblock %}
