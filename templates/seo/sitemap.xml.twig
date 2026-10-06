@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url><loc>{{ url('home') }}</loc></url>
+{# Chapters arrive grouped by work: emit the work URL when the work changes. Oneshots have no chapter URL. #}
+{% set previous = null %}
+{% for chapter in chapters %}
+    {% if chapter.work is not same as(previous) %}
+    <url><loc>{{ url('work_show', {slug: chapter.work.slug}) }}</loc></url>
+        {% set previous = chapter.work %}
+    {% endif %}
+    {% if chapter.work.type.value == 'series' %}
+    <url><loc>{{ url('chapter_read', {slug: chapter.work.slug, number: chapter.numberLabel}) }}</loc></url>
+    {% endif %}
+{% endfor %}
+</urlset>

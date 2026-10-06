@@ -1,10 +1,17 @@
 {% extends 'public/layout.html.twig' %}
 
-{% block title %}Goku{% endblock %}
+{% set seo = {
+    title: site_name,
+    description: site_description,
+    canonical: url('home'),
+    json_ld: {'@context': 'https://schema.org', '@type': 'WebSite', name: site_name, url: url('home')},
+} %}
 
 {% block main %}
     <main>
-        <h1>Works</h1>
+        <h1>{{ site_name }}</h1>
+        <p class="muted">{{ site_description }}</p>
+        <h2>Works</h2>
         {% if works is empty %}
             <p class="muted">Nothing published yet.</p>
         {% else %}

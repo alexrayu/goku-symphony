@@ -24,4 +24,10 @@ final class StorageKeys
     {
         return sprintf('derivatives/%d/%d.webp', $page->getChapter()->getId(), $page->getId());
     }
+
+    // Unscrambled link-preview image, made from the chapter's first page.
+    public static function cover(Chapter $chapter): string
+    {
+        return sprintf('covers/%d.jpg', $chapter->getId());
+    }
 }

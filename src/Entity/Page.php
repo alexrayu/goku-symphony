@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Enum\PageStatus;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
@@ -36,6 +37,9 @@ class Page
         private ?int $height = null,
         #[ORM\Column(length: 16, enumType: PageStatus::class)]
         private PageStatus $status = PageStatus::Pending,
+        // Comma-separated slot per tile of the scrambled derivative (order[tile] = slot); public, not a key.
+        #[ORM\Column(type: Types::TEXT, nullable: true)]
+        private ?string $tileOrder = null,
     ) {
     }
 
@@ -76,10 +80,19 @@ class Page
         return $this->height;
     }
 
-    public function setDimensions(int $width, int $height): static
+    public function getTileOrder(): ?string
+    {
+        return $this->tileOrder;
+    }
+
+    /**
+     * @param list<int> $tileOrder
+     */
+    public function setReadingCopy(int $width, int $height, array $tileOrder): static
     {
         $this->width = $width;
         $this->height = $height;
+        $this->tileOrder = implode(',', $tileOrder);
 
         return $this;
     }

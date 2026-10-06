@@ -16,8 +16,12 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 
+// Work URLs sit at the root. Negative priority lets fixed paths (/login, /admin, ...) match first;
+// Work::$slug rejects slugs that would shadow them.
 final class ReaderController extends AbstractController
 {
+    private const SLUG = '[a-z0-9]+(?:-[a-z0-9]+)*';
+
     public function __construct(private readonly ChapterRepository $chapters)
     {
     }
@@ -29,7 +33,7 @@ final class ReaderController extends AbstractController
     }
 
     // Series: chapter list. Oneshot: its single chapter is read right here, no list.
-    #[Route('/w/{slug}', name: 'work_show', methods: ['GET'])]
+    #[Route('/{slug}', name: 'work_show', requirements: ['slug' => self::SLUG], methods: ['GET'], priority: -10)]
     public function work(#[MapEntity(mapping: ['slug' => 'slug'])] Work $work): Response
     {
         $published = $this->chapters->findPublishedByWork($work);
@@ -44,9 +48,14 @@ final class ReaderController extends AbstractController
         return $this->render('public/work.html.twig', ['work' => $work, 'chapters' => $published]);
     }
 
-    #[Route('/w/{slug}/{number}', name: 'chapter_read', requirements: ['number' => '\d{1,5}(\.\d)?'], methods: ['GET'])]
+    #[Route('/{slug}/chapter-{number}', name: 'chapter_read', requirements: ['slug' => self::SLUG, 'number' => '\d{1,5}(\.\d)?'], methods: ['GET'], priority: -10)]
     public function chapter(#[MapEntity(mapping: ['slug' => 'slug'])] Work $work, string $number): Response
     {
+        // A oneshot has one URL; its chapter URL would be duplicate content.
+        if (WorkType::Oneshot === $work->getType()) {
+            return $this->redirectToRoute('work_show', ['slug' => $work->getSlug()], Response::HTTP_MOVED_PERMANENTLY);
+        }
+
         return $this->read($work, $number);
     }
 

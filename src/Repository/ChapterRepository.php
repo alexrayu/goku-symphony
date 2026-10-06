@@ -73,4 +73,22 @@ class ChapterRepository extends ServiceEntityRepository
             ->getQuery()
             ->getOneOrNullResult();
     }
+
+    /**
+     * Every published chapter with its work, in one query, for the sitemap.
+     *
+     * @return list<Chapter>
+     */
+    public function findAllPublishedWithWork(): array
+    {
+        return $this->createQueryBuilder('c')
+            ->addSelect('w')
+            ->join('c.work', 'w')
+            ->where('c.published = true')
+            ->orderBy('w.title', 'ASC')
+            ->addOrderBy('w.id', 'ASC')
+            ->addOrderBy('c.number', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
 }

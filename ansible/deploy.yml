@@ -28,10 +28,16 @@
             dest: "{{ release }}/.env.local"
             state: link
 
-        # Auto-scripts run cache:clear and assets:install for the prod env.
+        # Auto-scripts run cache:clear, assets:install and importmap:install for the prod env.
         - name: Install dependencies
           ansible.builtin.command:
             cmd: composer install --no-dev --classmap-authoritative --no-interaction --no-progress
+            chdir: "{{ release }}"
+          changed_when: true
+
+        - name: Compile assets
+          ansible.builtin.command:
+            cmd: php bin/console asset-map:compile
             chdir: "{{ release }}"
           changed_when: true
 

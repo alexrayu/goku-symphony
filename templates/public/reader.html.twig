@@ -1,31 +1,72 @@
 {% extends 'public/layout.html.twig' %}
 
 {% set oneshot = work.type.value == 'oneshot' %}
+{% set chapter_name = 'Chapter ' ~ chapter.numberLabel ~ (chapter.title ? ': ' ~ chapter.title : '') %}
+{% set work_url = url('work_show', {slug: work.slug}) %}
+{% set canonical = oneshot ? work_url : url('chapter_read', {slug: work.slug, number: chapter.numberLabel}) %}
+{% set seo = {
+    title: (oneshot ? work.title : work.title ~ ' ' ~ chapter_name) ~ ' | ' ~ site_name,
+    description: oneshot and work.description ? work.description : 'Read ' ~ work.title ~ (oneshot ? '' : ' ' ~ chapter_name) ~ ' online on ' ~ site_name ~ '.',
+    canonical: canonical,
+    image: chapter_cover_url(chapter),
+    type: 'article',
+    json_ld: oneshot ? {
+        '@context': 'https://schema.org',
+        '@type': 'ComicStory',
+        name: work.title,
+        description: work.description,
+        url: canonical,
+        image: chapter_cover_url(chapter),
+    } : {
+        '@context': 'https://schema.org',
+        '@graph': [
+            {
+                '@type': 'ComicIssue',
+                name: chapter_name,
+                issueNumber: chapter.numberLabel,
+                url: canonical,
+                image: chapter_cover_url(chapter),
+                isPartOf: {'@type': 'ComicSeries', name: work.title, url: work_url},
+            },
+            {
+                '@type': 'BreadcrumbList',
+                itemListElement: [
+                    {'@type': 'ListItem', position: 1, name: site_name, item: url('home')},
+                    {'@type': 'ListItem', position: 2, name: work.title, item: work_url},
+                    {'@type': 'ListItem', position: 3, name: chapter_name, item: canonical},
+                ],
+            },
+        ],
+    },
+} %}
 
-{% block title %}{{ oneshot ? work.title : work.title ~ ' - Chapter ' ~ chapter.numberLabel }}{% endblock %}
+{% block javascripts %}{{ importmap('app') }}{% endblock %}
 
 {% block crumbs %}
     {% if oneshot %}
-        <span>{{ work.title }}</span>
+        <h1>{{ work.title }}</h1>
     {% else %}
-        <a href="{{ path('work_show', {slug: work.slug}) }}">{{ work.title }}</a>
-        <span class="muted">Chapter {{ chapter.numberLabel }}{% if chapter.title %}: {{ chapter.title }}{% endif %}</span>
+        <a href="{{ work_url }}">{{ work.title }}</a>
+        <h1 class="muted">{{ chapter_name }}</h1>
     {% endif %}
 {% endblock %}
 
 {% block main %}
     <main class="reader">
-        <div class="pages">
-            {# First pages load eagerly (above the fold); the rest lazily as the reader scrolls. #}
+        {# Pages are scrambled tiles, rebuilt on canvas by the reader controller; the box reserves the space. #}
+        <div class="pages" data-controller="reader" data-reader-tile-value="{{ constant('App\\Ingest\\DerivativeGenerator::TILE_SIZE') }}">
             {% for page in pages %}
-                <img src="{{ page_image_url(page) }}" width="{{ page.width }}" height="{{ page.height }}"
-                     alt="Page {{ loop.index }}" decoding="async"{% if loop.index > 2 %} loading="lazy"{% endif %}>
+                <div class="page" data-reader-target="page" role="img" aria-label="Page {{ loop.index }}"
+                     style="aspect-ratio: {{ page.width }} / {{ page.height }}; max-width: {{ page.width }}px"
+                     data-src="{{ page_image_url(page) }}" data-width="{{ page.width }}" data-height="{{ page.height }}"
+                     data-order="{{ page.tileOrder }}"></div>
             {% else %}
                 <p class="reader-end muted">No pages yet.</p>
             {% endfor %}
         </div>
+        <noscript><p class="reader-end">Turn on JavaScript to read this chapter.</p></noscript>
         {% if not oneshot %}
-            <p class="reader-end"><a href="{{ path('work_show', {slug: work.slug}) }}">Back to chapters</a></p>
+            <p class="reader-end"><a href="{{ work_url }}">Back to chapters</a></p>
         {% endif %}
     </main>
 {% endblock %}

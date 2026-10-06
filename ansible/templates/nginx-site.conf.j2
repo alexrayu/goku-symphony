@@ -23,6 +23,17 @@ server {
     root {{ app_root }}/current/public;
     client_max_body_size {{ upload_max_size }};
 
+    # Ubuntu's nginx.conf only gzips text/html. Images are already compressed.
+    gzip_types text/css text/plain text/xml application/javascript application/json application/xml image/svg+xml;
+    gzip_vary on;
+
+    # Fingerprinted file names (AssetMapper, EasyAdmin): a change means a new URL.
+    location ~ ^/(assets|bundles)/ {
+        add_header Cache-Control "public, max-age=31536000, immutable";
+        access_log off;
+        try_files $uri =404;
+    }
+
     location / {
         try_files $uri /index.php$is_args$args;
     }

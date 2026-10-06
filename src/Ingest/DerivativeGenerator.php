@@ -17,6 +17,11 @@ use Symfony\Component\Messenger\Event\WorkerMessageFailedEvent;
 final class DerivativeGenerator
 {
     private const MAX_WIDTH = 1200;
+    // Shared with the reader controller (assets/controllers/reader_controller.js).
+    public const TILE_SIZE = 128;
+    // Open Graph's recommended link-preview size.
+    private const COVER_WIDTH = 1200;
+    private const COVER_HEIGHT = 630;
 
     public function __construct(
         private readonly EntityManagerInterface $em,
@@ -38,28 +43,39 @@ final class DerivativeGenerator
 
         $source = $this->tempFile->download($page->getOriginalKey());
         $target = $source.'.webp';
+        $cover = $source.'.jpg';
         try {
-            [$width, $height] = $this->images->toWebp($source, $target, self::MAX_WIDTH);
-            $stream = fopen($target, 'rb');
-            if (false === $stream) {
-                throw new \RuntimeException('Cannot read the generated derivative.');
-            }
-            try {
-                $this->defaultStorage->writeStream(StorageKeys::derivative($page), $stream);
-            } finally {
-                fclose($stream);
+            [$width, $height, $order] = $this->images->toScrambledWebp($source, $target, self::MAX_WIDTH, self::TILE_SIZE);
+            $this->store($target, StorageKeys::derivative($page));
+
+            if ($page->getChapter()->getPages()->first() === $page) {
+                $this->images->toCoverJpeg($source, $cover, self::COVER_WIDTH, self::COVER_HEIGHT);
+                $this->store($cover, StorageKeys::cover($page->getChapter()));
             }
         } finally {
-            foreach ([$source, $target] as $file) {
+            foreach ([$source, $target, $cover] as $file) {
                 if (is_file($file)) {
                     unlink($file);
                 }
             }
         }
 
-        // Derivative dimensions: what the reader displays and reserves space for.
-        $page->setDimensions($width, $height)->setStatus(PageStatus::Ready);
+        // Reading-copy dimensions: what the reader displays and reserves space for.
+        $page->setReadingCopy($width, $height, $order)->setStatus(PageStatus::Ready);
         $this->em->flush();
+    }
+
+    private function store(string $file, string $key): void
+    {
+        $stream = fopen($file, 'rb');
+        if (false === $stream) {
+            throw new \RuntimeException('Cannot read the generated image.');
+        }
+        try {
+            $this->defaultStorage->writeStream($key, $stream);
+        } finally {
+            fclose($stream);
+        }
     }
 
     // Retries exhausted: make the failure visible on the page instead of leaving it "processing".

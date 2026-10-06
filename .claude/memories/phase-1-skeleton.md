@@ -5,7 +5,7 @@ Phases 1-3 committed (skeleton, domain + EasyAdmin, auth + first-run installer).
 
 Phase 4 (ingestion) committed (a033e81). PHPStan level 8 clean. Verified end to end in headless Chromium with a live worker: upload a ZIP on a Chapter, worker extracts, natural order, WebP derivatives, all pages `ready`. All tests pass.
 
-Phase 5 (reader) built, uncommitted, verified in headless Chromium (anonymous): `/` lists works with published chapters, `/w/{slug}` lists chapters (oneshot: reader in place), `/w/{slug}/{number}` reader, `/media/page/{id}.webp` streams derivatives. 21 tests pass, PHPStan clean. Lazy loading is native `loading="lazy"` (user said continue without picking; recommended option), no Stimulus/AssetMapper yet. Phase 5 checkpoint closed 2026-10-06: oneshot extra query left as is (recommended option). User commits phase 5, then phase 6 (Ansible/prod).
+Phase 5 (reader) built, uncommitted, verified in headless Chromium (anonymous): `/` lists works with published chapters, `/w/{slug}` lists chapters (oneshot: reader in place), `/w/{slug}/{number}` reader, `/media/page/{id}.webp` streams derivatives. 21 tests pass, PHPStan clean. Lazy loading is native `loading="lazy"` (user said continue without picking; recommended option), no Stimulus/AssetMapper yet. Phase 5 checkpoint closed 2026-10-06: oneshot extra query left as is (recommended option). User commits phase 5.
 
 Dev DB has a demo oneshot "E2E Test Work", chapter 1 published, 4 labelled pages ("Page 1", "Page 2", "Page 10", tall strip) at `/w/e2e-test-work`.
 
@@ -21,9 +21,19 @@ Open question to the user: trim the `LATER.md` web-installer line to what is lef
 - Deploy = git clone of public GitHub repo (`alexrayu/goku-symphony`) into releases/, symlink switch.
 - Secrets in untracked `ansible/secrets.yml` + committed example; no vault.
 - No droplet yet: verify against a local Ubuntu 24.04 systemd container. Harness (Dockerfile, inventory, key, self-signed cert, Playwright venv, e2e.py) in `~/Documents/tickets/goku-symfony/phase-6/`; container `goku-prodtest`, ports 2222/8443, host `goku.test`. Deploy test: `docker cp` a bare clone to `/opt/goku.git` (chown goku), `-e app_repo=file:///opt/goku.git -e app_ref=phase-1-skeleton`. Test secrets go in gitignored `ansible/secrets.yml`; delete after.
-- Status 2026-10-06: provision idempotent, deploy + full slice E2E pass in the container (install, upload, worker, derivatives, reader, X-Accel media, draft 404). Pending: user commits the Flysystem permissions fix, then a second deploy is tested.
+- Status 2026-10-06: phase 6 done locally. Provision idempotent; two deploys (release switch, worker restarts into new release) and full slice E2E pass in the container. Container removed, image `goku-prodtest` kept; test `ansible/secrets.yml` deleted. Next: user creates the droplet, fills inventory host, `app_hostname`, real `secrets.yml` (origin cert), runs `make provision` and `make deploy REF=...`; slice done when a stranger opens the reader URL.
 - MediaController uses BinaryFileResponse on `STORAGE_PATH` (not Flysystem) so `SYMFONY_TRUST_X_SENDFILE_TYPE_HEADER=1` + Nginx `X-Accel-Mapping` hand the body to Nginx.
 - Cloudflare Free caps request bodies at 100 MB; upload limit stays 200M (origin only). Told user.
+
+## SEO + protection work (started 2026-10-06, build mode)
+- Decisions: tile scrambling like goku-static (128px tiles, `order[source]=slot`, no gutter: measured border error 0.73 vs 0.69 plain at Q80, gutter +20% bytes); friction (contextmenu/drag/select blocked); URLs `/{slug}` + `/{slug}/chapter-{n}`, reserved slugs validated, oneshot chapter URL 301 to `/{slug}`; site meta via env `SITE_NAME`/`SITE_DESCRIPTION`; anonymous HTML `public, s-maxage=300` + ETag, Cloudflare Cache Rule documented, no purge API.
+- Scrambling via vips `mapim` with an index built from .mat matrices (8 vips calls; 0.6s normal page, 2.5s 14k strip). Per-tile extract_area was 4.5s/35s.
+- Reading height cap 16256 (127 tiles) so packed WebP stays <= 16383.
+- og:image = 1200x630 JPEG cover from each chapter's first page, under /media/cover/ (robots allows), pages under /media/page/ disallowed.
+- Canvas segments <= 4096px tall (iOS canvas area limit).
+- Status 2026-10-06: built (scramble at ingest, covers keyed by chapter, Stimulus reader, clean URLs, meta/JSON-LD, robots/sitemap, PublicPageCache listener, Nginx assets/gzip, ansible/README.md). 28 tests + PHPStan green. Pending: user commits, then deploy to prod test container for canvas pixel E2E + Lighthouse. Dev DB writes (user/work inserts) were permission-denied: verify on the container instead.
+- importmap only on the reader page; other public pages ship no JS. Recipe demo controllers (hello, csrf_protection) removed: login uses session CSRF tokens.
+- Container-created files are root-owned on the host (uid 1001 = ara): chown after composer/recipes/migrations:diff.
 
 ## Gotchas
 - Composer's global GitHub token is stale; Flex recipe fetch 404s with it. Require with a clean `COMPOSER_HOME` (`-e COMPOSER_HOME=/tmp/ch`), and quote version constraints in zsh.

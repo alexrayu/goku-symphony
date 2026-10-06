@@ -9,6 +9,7 @@ use App\Repository\WorkRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: WorkRepository::class)]
 #[ORM\Table(name: 'work')]
@@ -33,7 +34,10 @@ class Work
     public function __construct(
         #[ORM\Column(length: 255)]
         private string $title,
+        // Public URL /{slug}. The reserved names are the fixed top-level paths, which match before work URLs.
         #[ORM\Column(length: 255, unique: true)]
+        #[Assert\Regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', message: 'Use lowercase letters, digits and single hyphens.')]
+        #[Assert\Regex('/^(admin|login|logout|install|media|assets|bundles)$/', message: 'This slug is reserved for a site page.', match: false)]
         private string $slug,
         #[ORM\Column(length: 16, enumType: WorkType::class)]
         private WorkType $type = WorkType::Series,

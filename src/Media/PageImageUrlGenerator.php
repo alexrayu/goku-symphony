@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Media;
 
+use App\Entity\Chapter;
 use App\Entity\Page;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Twig\Attribute\AsTwigFunction;
@@ -20,5 +21,12 @@ final class PageImageUrlGenerator
     public function derivative(Page $page): string
     {
         return $this->urlGenerator->generate('media_page', ['id' => $page->getId()]);
+    }
+
+    // Absolute: link-preview crawlers resolve og:image without a base URL.
+    #[AsTwigFunction('chapter_cover_url')]
+    public function cover(Chapter $chapter): string
+    {
+        return $this->urlGenerator->generate('media_cover', ['id' => $chapter->getId()], UrlGeneratorInterface::ABSOLUTE_URL);
     }
 }

@@ -1,6 +1,26 @@
 {% extends 'public/layout.html.twig' %}
 
-{% block title %}{{ work.title }}{% endblock %}
+{% set canonical = url('work_show', {slug: work.slug}) %}
+{% set seo = {
+    title: work.title ~ ' | ' ~ site_name,
+    description: work.description ?: 'Read ' ~ work.title ~ ' online on ' ~ site_name ~ '.',
+    canonical: canonical,
+    image: chapter_cover_url(chapters|first),
+    json_ld: {
+        '@context': 'https://schema.org',
+        '@type': 'ComicSeries',
+        name: work.title,
+        description: work.description,
+        url: canonical,
+        image: chapter_cover_url(chapters|first),
+        hasPart: chapters|map(c => {
+            '@type': 'ComicIssue',
+            issueNumber: c.numberLabel,
+            name: c.title ?: 'Chapter ' ~ c.numberLabel,
+            url: url('chapter_read', {slug: work.slug, number: c.numberLabel}),
+        }),
+    },
+} %}
 
 {% block main %}
     <main>

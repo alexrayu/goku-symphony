@@ -5,6 +5,8 @@ redis_version: "{{ lookup('ini', 'REDIS_VERSION', type='properties', file=playbo
 composer_version: "2.10.3"
 
 app_hostname: TODO   # subdomain pointed at the droplet by a proxied Cloudflare DNS record
+site_name: Goku
+site_description: Manga and comics to read online.
 app_user: goku
 app_root: /srv/goku
 app_repo: https://github.com/alexrayu/goku-symphony.git

@@ -12,6 +12,7 @@
         "doctrine/orm": "^3.7",
         "easycorp/easyadmin-bundle": "^5.6",
         "league/flysystem-bundle": "^3.7",
+        "symfony/asset-mapper": "7.4.*",
         "symfony/console": "7.4.*",
         "symfony/dotenv": "7.4.*",
         "symfony/flex": "^2",
@@ -21,6 +22,7 @@
         "symfony/rate-limiter": "^7.4",
         "symfony/redis-messenger": "7.4.*",
         "symfony/runtime": "7.4.*",
+        "symfony/stimulus-bundle": "^3.5",
         "symfony/yaml": "7.4.*"
     },
     "config": {
@@ -57,7 +59,8 @@
     "scripts": {
         "auto-scripts": {
             "cache:clear": "symfony-cmd",
-            "assets:install %PUBLIC_DIR%": "symfony-cmd"
+            "assets:install %PUBLIC_DIR%": "symfony-cmd",
+            "importmap:install": "symfony-cmd"
         },
         "post-install-cmd": [
             "@auto-scripts"

@@ -8,9 +8,16 @@ namespace App\Image;
 interface ImageProcessor
 {
     /**
-     * Writes a WebP of $source to $target, shrunk to at most $maxWidth wide, never upscaled.
+     * Shrinks $source to at most $maxWidth wide (never upscaled), cuts it into $tileSize squares
+     * and writes them to $target as one WebP with the tiles in shuffled slots. Edge tiles are
+     * padded to full size. Same format as goku-static: order[sourceTile] = slot, row-major.
      *
-     * @return array{int, int} width and height of the written file
+     * @return array{int, int, list<int>} reading width, reading height, tile order
      */
-    public function toWebp(string $source, string $target, int $maxWidth): array;
+    public function toScrambledWebp(string $source, string $target, int $maxWidth, int $tileSize): array;
+
+    /**
+     * Writes an unscrambled JPEG of $source cropped to $width x $height (never upscaled), for link previews.
+     */
+    public function toCoverJpeg(string $source, string $target, int $width, int $height): void;
 }

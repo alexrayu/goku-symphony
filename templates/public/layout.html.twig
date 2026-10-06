@@ -1,30 +1,57 @@
-{# Public pages: dark background suits reading; one inline stylesheet until an asset pipeline exists. #}
+{# Public pages: dark background suits reading; one inline stylesheet, no render-blocking requests.
+   Child templates set `seo`: title, description, canonical, and optionally image, type, json_ld. #}
 {% extends 'base.html.twig' %}
 
+{% block title %}{{ seo.title }}{% endblock %}
+
 {% block stylesheets %}
+    {% set description = seo.description|striptags|replace({"\n": ' '})|trim|slice(0, 160) %}
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="{{ description }}">
+    <link rel="canonical" href="{{ seo.canonical }}">
+    <meta property="og:site_name" content="{{ site_name }}">
+    <meta property="og:type" content="{{ seo.type ?? 'website' }}">
+    <meta property="og:title" content="{{ seo.title }}">
+    <meta property="og:description" content="{{ description }}">
+    <meta property="og:url" content="{{ seo.canonical }}">
+    {% if seo.image ?? null %}
+        <meta property="og:image" content="{{ seo.image }}">
+        <meta property="og:image:width" content="1200">
+        <meta property="og:image:height" content="630">
+        <meta name="twitter:card" content="summary_large_image">
+    {% else %}
+        <meta name="twitter:card" content="summary">
+    {% endif %}
+    {% if seo.json_ld ?? null %}
+        <script type="application/ld+json">{{ seo.json_ld|json_encode(constant('JSON_UNESCAPED_SLASHES') b-or constant('JSON_UNESCAPED_UNICODE') b-or constant('JSON_HEX_TAG'))|raw }}</script>
+    {% endif %}
     <style>
         body { margin: 0; background: #111; color: #e6e6e6; font: 16px/1.5 system-ui, sans-serif; }
         a { color: #8ab4f8; text-decoration: none; }
         a:hover { text-decoration: underline; }
         header { max-width: 1200px; margin: 0 auto; padding: 1rem; display: flex; gap: .75rem; align-items: baseline; flex-wrap: wrap; }
         header .site { font-weight: 700; color: #e6e6e6; }
+        header h1 { margin: 0; font-size: 1rem; font-weight: 400; }
         main { max-width: 1200px; margin: 0 auto; padding: 0 1rem 3rem; }
         h1 { margin: .5rem 0 1rem; font-size: 1.6rem; }
+        h2 { margin: 1.5rem 0 .5rem; font-size: 1.2rem; }
         ul.list { list-style: none; margin: 0; padding: 0; }
         ul.list li { border-top: 1px solid #2a2a2a; }
         ul.list a { display: block; padding: .75rem 0; }
-        .muted { color: #9a9a9a; }
-        /* Reader: pages edge to edge, no gaps; width/height attributes reserve the space. */
+        .muted { color: #a8a8a8; }
+        /* Reader: pages edge to edge, no gaps; aspect-ratio reserves the space before the canvas draws. */
         main.reader { padding: 0; }
-        .pages img { display: block; max-width: 100%; height: auto; margin: 0 auto; }
+        .pages { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+        .page { margin: 0 auto; background: #1a1a1a; }
+        .page canvas { display: block; width: 100%; height: auto; }
+        .page p { margin: 0; padding: 2rem 1rem; text-align: center; }
         .reader-end { padding: 2rem 1rem; text-align: center; }
     </style>
 {% endblock %}
 
 {% block body %}
     <header>
-        <a class="site" href="{{ path('home') }}">Goku</a>
+        <a class="site" href="{{ path('home') }}">{{ site_name }}</a>
         {% block crumbs %}{% endblock %}
     </header>
     {% block main %}{% endblock %}
