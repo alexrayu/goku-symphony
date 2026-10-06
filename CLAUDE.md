@@ -17,7 +17,12 @@ Branch memories live in `.claude/memories/<branch>.md` (committed, public repo),
 - Search later: PostgreSQL tsvector. No Meilisearch/Solr.
 - Ask before adding any dependency not listed here.
 
-## Working agreement: teaching mode
+## Working agreement: build mode now, teaching mode later
+
+- Since 2026-10-06 (from phase 6): build without teaching stops. No query-count predictions, no "yours to write" pieces, no per-step proposals. Still ask on genuine blockers and dependency additions; still never commit (list files and messages per concern when a phase is done).
+- When the user asks to be taught, apply the teaching rules below to the finished code.
+
+### Teaching mode (paused)
 
 - Propose, then build: a few lines on what and why before each step.
 - Explain Doctrine decisions explicitly (owning vs. inverse side, cascade, orphan removal, fetch modes, flush timing), naming the UnitOfWork behaviour.

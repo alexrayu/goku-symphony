@@ -1,7 +1,7 @@
 COMPOSE = docker compose --env-file versions.env
 RUN     = $(COMPOSE) run --rm php
 
-.PHONY: up down install stan schema test
+.PHONY: up down install stan schema test provision deploy
 
 up:
 	$(COMPOSE) up -d --build
@@ -20,3 +20,10 @@ schema:
 
 test:
 	$(RUN) vendor/bin/phpunit
+
+# Prod. Needs ansible/secrets.yml and the inventory host. Deploy a branch: make deploy REF=<branch>
+provision:
+	cd ansible && ansible-playbook provision.yml
+
+deploy:
+	cd ansible && ansible-playbook deploy.yml $(if $(REF),-e app_ref=$(REF))

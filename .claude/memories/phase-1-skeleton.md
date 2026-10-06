@@ -5,13 +5,22 @@ Phases 1-3 committed (skeleton, domain + EasyAdmin, auth + first-run installer).
 
 Phase 4 (ingestion) committed (a033e81). PHPStan level 8 clean. Verified end to end in headless Chromium with a live worker: upload a ZIP on a Chapter, worker extracts, natural order, WebP derivatives, all pages `ready`. All tests pass.
 
-Phase 5 (reader) built, uncommitted, verified in headless Chromium (anonymous): `/` lists works with published chapters, `/w/{slug}` lists chapters (oneshot: reader in place), `/w/{slug}/{number}` reader, `/media/page/{id}.webp` streams derivatives. 21 tests pass, PHPStan clean. Lazy loading is native `loading="lazy"` (user said continue without picking; recommended option), no Stimulus/AssetMapper yet. Next: phase 5 checkpoint. Query-count prediction asked 2026-10-06 (chapter URL vs oneshot URL, dev env), awaiting the user's numbers; then the user commits phase 5, then phase 6 (Ansible/prod).
+Phase 5 (reader) built, uncommitted, verified in headless Chromium (anonymous): `/` lists works with published chapters, `/w/{slug}` lists chapters (oneshot: reader in place), `/w/{slug}/{number}` reader, `/media/page/{id}.webp` streams derivatives. 21 tests pass, PHPStan clean. Lazy loading is native `loading="lazy"` (user said continue without picking; recommended option), no Stimulus/AssetMapper yet. Phase 5 checkpoint closed 2026-10-06: oneshot extra query left as is (recommended option). User commits phase 5, then phase 6 (Ansible/prod).
 
 Dev DB has a demo oneshot "E2E Test Work", chapter 1 published, 4 labelled pages ("Page 1", "Page 2", "Page 10", tall strip) at `/w/e2e-test-work`.
 
 User-owned pieces left unwritten on purpose: `make check` target, smoke test in `tests/`, page position-gap helper test, phase 3 login functional test (UserFactory password is "!", so use `loginUser()` or add a hashed default). `ArchivePageOrder::sort()` + its test were meant for the user, but they asked Claude to write them and will study them later.
 
 Open question to the user: trim the `LATER.md` web-installer line to what is left (requirements check, DB credentials, `.env.local`, migrations).
+
+## Working mode
+- 2026-10-06: user switched to build mode (see CLAUDE.md). Build phase 6 without teaching stops; the user studies the code and asks for teaching later.
+
+## Phase 6 decisions (2026-10-06)
+- Droplet Ubuntu 24.04; PHP 8.4 from ondrej PPA (8.3 rejected: 26 locked packages need 8.4). PG 16, Redis 7 from distro.
+- Deploy = git clone of public GitHub repo (`alexrayu/goku-symphony`) into releases/, symlink switch.
+- Secrets in untracked `ansible/secrets.yml` + committed example; no vault.
+- No droplet yet: verify playbook against a local Ubuntu 24.04 systemd container.
 
 ## Gotchas
 - Composer's global GitHub token is stale; Flex recipe fetch 404s with it. Require with a clean `COMPOSER_HOME` (`-e COMPOSER_HOME=/tmp/ch`), and quote version constraints in zsh.
@@ -30,6 +39,7 @@ Open question to the user: trim the `LATER.md` web-installer line to what is lef
 - EasyAdmin `NumberField` on a DECIMAL (string) needs `setStoredAsString()` plus `setNumberFormat()`; the Intl formatter only accepts int|float. Chapter "new" also crashed on an unmanaged placeholder Work; now preselects the newest Work (409 if none) with number "1".
 - `/admin` redirects to the Work list; tests expect `/admin` -> 302 `/admin/work`.
 - `symfony/web-profiler-bundle` is NOT installed (no toolbar). Test env enables the core profiler (`framework.profiler.collect: false`); tests call `enableProfiler()`. The first request shares the kernel with Foundry, so reset `doctrine.debug_data_holder` and clear the EM before a counted request, or setup INSERTs count and initialized collections skip ORDER BY.
+- Oneshot URL `/w/{slug}` costs one more (4 test / 3 dev): `findPublishedByWork()` then `findPublishedForReader()` re-read the same chapter; DQL bypasses the identity map. Dropping it needs care: `getOneOrNullResult()` throws if a oneshot has 2 published chapters (invariant not enforced yet), and `setMaxResults` on a fetch-joined collection truncates pages.
 - Reader query count is 3 per request in tests: installed check (array cache in test; cached in dev/prod, so 2 there), work by slug, chapter + pages fetch join.
 - Reader CSS uses `max-width: 100%` on pages, not `width: 100%`: narrow strips must not be upscaled.
 
