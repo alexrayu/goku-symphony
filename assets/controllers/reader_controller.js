@@ -4,12 +4,13 @@ import { Controller } from '@hotwired/stimulus';
 // A multiple of the tile size, so no tile row straddles two segments.
 const SEGMENT_HEIGHT = 4096;
 
-// Rebuilds scrambled pages (format: order[sourceTile] = slot, row-major tiles) on canvas.
+// Rebuilds scrambled pages on canvas. Format: order[sourceTile] = slot, row-major; each slot is a
+// cell of tile + 2 * gutter pixels, the tile sits at the gutter offset inside it.
 // Pages near the viewport are drawn, distant ones release their canvases. Saving is made
 // inconvenient, not impossible: the tile order is public.
 export default class extends Controller {
     static targets = ['page'];
-    static values = { tile: Number };
+    static values = { tile: Number, gutter: Number };
 
     connect() {
         this.pending = new Map();
@@ -64,11 +65,13 @@ export default class extends Controller {
 
     draw(bitmap, { width, height, order }) {
         const tile = this.tileValue;
+        const gutter = this.gutterValue;
+        const cell = tile + 2 * gutter;
         const [w, h] = [Number(width), Number(height)];
         const columns = Math.ceil(w / tile);
         const rows = Math.ceil(h / tile);
         const slots = order.split(',').map(Number);
-        if (slots.length !== columns * rows || bitmap.width !== columns * tile || bitmap.height !== rows * tile) {
+        if (slots.length !== columns * rows || bitmap.width !== columns * cell || bitmap.height !== rows * cell) {
             throw new Error('Image does not match its tile order.');
         }
 
@@ -85,7 +88,7 @@ export default class extends Controller {
                     const y = row * tile;
                     const tw = Math.min(tile, w - x);
                     const th = Math.min(tile, h - y);
-                    context.drawImage(bitmap, (slot % columns) * tile, Math.floor(slot / columns) * tile, tw, th, x, y - top, tw, th);
+                    context.drawImage(bitmap, (slot % columns) * cell + gutter, Math.floor(slot / columns) * cell + gutter, tw, th, x, y - top, tw, th);
                 }
             }
             canvases.push(canvas);

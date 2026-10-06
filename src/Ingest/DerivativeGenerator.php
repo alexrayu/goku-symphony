@@ -17,8 +17,11 @@ use Symfony\Component\Messenger\Event\WorkerMessageFailedEvent;
 final class DerivativeGenerator
 {
     private const MAX_WIDTH = 1200;
-    // Shared with the reader controller (assets/controllers/reader_controller.js).
+    // Passed to the reader controller (assets/controllers/reader_controller.js) by the reader template.
     public const TILE_SIZE = 128;
+    // Without it lossy WebP seams gradients and screentones at tile edges. 4 px still left traces in
+    // the browser; 8 px makes 144 px cells, aligned to WebP's 16 px blocks, for ~25% more bytes.
+    public const TILE_GUTTER = 8;
     // Open Graph's recommended link-preview size.
     private const COVER_WIDTH = 1200;
     private const COVER_HEIGHT = 630;
@@ -45,7 +48,7 @@ final class DerivativeGenerator
         $target = $source.'.webp';
         $cover = $source.'.jpg';
         try {
-            [$width, $height, $order] = $this->images->toScrambledWebp($source, $target, self::MAX_WIDTH, self::TILE_SIZE);
+            [$width, $height, $order] = $this->images->toScrambledWebp($source, $target, self::MAX_WIDTH, self::TILE_SIZE, self::TILE_GUTTER);
             $this->store($target, StorageKeys::derivative($page));
 
             if ($page->getChapter()->getPages()->first() === $page) {

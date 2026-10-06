@@ -77,13 +77,13 @@ final class IngestPipelineTest extends KernelTestCase
         $pages = $em->getRepository(Page::class)->findBy(['chapter' => $chapter->getId()], ['position' => 'ASC']);
 
         self::assertSame([10, 20, 30, 40], array_map(static fn (Page $p) => $p->getPosition(), $pages));
-        // page_1 and page_2 kept as is, page_10 shrunk to 1200 wide, the strip capped at 127 tiles (16256 px),
-        // so the scrambled WebP, padded to whole tiles, stays within WebP's 16383 px.
+        // page_1 and page_2 kept as is, page_10 shrunk to 1200 wide, the strip capped at 113 tile rows
+        // (14464 px), so the scrambled WebP, 144 px per cell row, stays within WebP's 16383 px.
         self::assertSame([[40, 60], [50, 60], [1200, 50]], array_map(
             static fn (Page $p) => [$p->getWidth(), $p->getHeight()],
             \array_slice($pages, 0, 3),
         ));
-        self::assertSame(16256, $pages[3]->getHeight());
+        self::assertSame(14464, $pages[3]->getHeight());
         self::assertLessThan(100, (int) $pages[3]->getWidth());
 
         $storage = static::getContainer()->get('default.storage');

@@ -54,7 +54,8 @@
 {% block main %}
     <main class="reader">
         {# Pages are scrambled tiles, rebuilt on canvas by the reader controller; the box reserves the space. #}
-        <div class="pages" data-controller="reader" data-reader-tile-value="{{ constant('App\\Ingest\\DerivativeGenerator::TILE_SIZE') }}">
+        <div class="pages" data-controller="reader" data-reader-tile-value="{{ constant('App\\Ingest\\DerivativeGenerator::TILE_SIZE') }}"
+             data-reader-gutter-value="{{ constant('App\\Ingest\\DerivativeGenerator::TILE_GUTTER') }}">
             {% for page in pages %}
                 <div class="page" data-reader-target="page" role="img" aria-label="Page {{ loop.index }}"
                      style="aspect-ratio: {{ page.width }} / {{ page.height }}; max-width: {{ page.width }}px"

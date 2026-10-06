@@ -13,6 +13,8 @@ use Symfony\Component\Process\Process;
 final class VipsCliImageProcessorTest extends TestCase
 {
     private const TILE = 128;
+    private const GUTTER = 8;
+    private const CELL = self::TILE + 2 * self::GUTTER;
     private const COLUMNS = 5;
     private const ROWS = 4;
     // Partial edge tiles on the right and bottom: 600 = 4 * 128 + 88, 500 = 3 * 128 + 116.
@@ -37,15 +39,15 @@ final class VipsCliImageProcessorTest extends TestCase
         $source = $this->tileSource();
         $packed = $this->dir.'/packed.webp';
 
-        [$width, $height, $order] = (new VipsCliImageProcessor())->toScrambledWebp($source, $packed, 1200, self::TILE);
+        [$width, $height, $order] = (new VipsCliImageProcessor())->toScrambledWebp($source, $packed, 1200, self::TILE, self::GUTTER);
 
         self::assertSame([self::WIDTH, self::HEIGHT], [$width, $height]);
         $sorted = $order;
         sort($sorted);
         self::assertSame(range(0, self::COLUMNS * self::ROWS - 1), $sorted, 'Order is a permutation.');
         self::assertNotSame(range(0, self::COLUMNS * self::ROWS - 1), $order, 'Tiles are shuffled.');
-        self::assertSame((string) (self::COLUMNS * self::TILE), $this->vips(['vipsheader', '-f', 'width', $packed]));
-        self::assertSame((string) (self::ROWS * self::TILE), $this->vips(['vipsheader', '-f', 'height', $packed]));
+        self::assertSame((string) (self::COLUMNS * self::CELL), $this->vips(['vipsheader', '-f', 'width', $packed]));
+        self::assertSame((string) (self::ROWS * self::CELL), $this->vips(['vipsheader', '-f', 'height', $packed]));
 
         foreach ($order as $tile => $slot) {
             $tileWidth = min(self::TILE, self::WIDTH - ($tile % self::COLUMNS) * self::TILE);
@@ -53,7 +55,7 @@ final class VipsCliImageProcessorTest extends TestCase
             $crop = $this->dir."/slot$slot.v";
             $this->vips([
                 'vips', 'extract_area', $packed, $crop,
-                (string) (($slot % self::COLUMNS) * self::TILE), (string) (intdiv($slot, self::COLUMNS) * self::TILE),
+                (string) (($slot % self::COLUMNS) * self::CELL + self::GUTTER), (string) (intdiv($slot, self::COLUMNS) * self::CELL + self::GUTTER),
                 (string) $tileWidth, (string) $tileHeight,
             ]);
             self::assertEqualsWithDelta($this->grey($tile), (float) $this->vips(['vips', 'avg', $crop]), 2.0, "Tile $tile in slot $slot");
