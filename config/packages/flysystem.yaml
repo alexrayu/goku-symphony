@@ -2,8 +2,12 @@ flysystem:
     storages:
         default.storage:
             adapter: 'local'
+            # Without a default visibility the adapter never chmods files; they keep the process umask.
+            visibility: public
+            directory_visibility: public
             options:
                 directory: '%env(resolve:STORAGE_PATH)%'
+                # 0o prefix: Symfony YAML reads a bare 0750 as the string "0750", which casts to decimal 750.
                 permissions:
-                    file: { public: 0640, private: 0600 }
-                    dir: { public: 0750, private: 0700 }
+                    file: { public: 0o640, private: 0o600 }
+                    dir: { public: 0o750, private: 0o700 }

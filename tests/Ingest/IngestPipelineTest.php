@@ -92,6 +92,11 @@ final class IngestPipelineTest extends KernelTestCase
             self::assertTrue($storage->fileExists(StorageKeys::derivative($page)));
         }
         self::assertFalse($storage->fileExists($key), 'Incoming archive is deleted after ingest.');
+
+        // Prod runs as an unprivileged user and Nginx reads through the group; dev as root hides bad modes.
+        $derivative = static::getContainer()->getParameter('kernel.project_dir').'/var/storage-test/'.StorageKeys::derivative($pages[0]);
+        self::assertSame(0o640, fileperms($derivative) & 0o7777);
+        self::assertSame(0o750, fileperms(\dirname($derivative)) & 0o7777);
     }
 
     public function testChapterWithPagesRejectsArchiveWithoutRetry(): void
