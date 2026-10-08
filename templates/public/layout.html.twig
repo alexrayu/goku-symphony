@@ -62,6 +62,7 @@
         .card a:hover h3 { color: var(--accent); }
         .card p { margin: 0; color: var(--muted); font-size: .875rem; }
         .badge { display: inline-block; padding: .1rem .5rem; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); font-size: .75rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+        .badge.draft { border-color: var(--accent); color: var(--accent); }
         .empty { padding: 3rem 1rem; border: 1px dashed var(--line); border-radius: var(--radius); text-align: center; }
 
         /* Work: cover beside title and actions, then the chapter list */
@@ -88,6 +89,7 @@
 
         /* Reader: pages edge to edge, no gaps; aspect-ratio reserves the space before the canvas draws. */
         .reader-head { padding-block: 1.5rem; text-align: center; }
+        .reader-head .badge { margin-bottom: .6rem; }
         .reader-head h1 { margin: 0; font-size: 1.5rem; }
         .reader-head p { margin: .35rem 0 0; }
         .chapter-nav { display: flex; flex-wrap: wrap; justify-content: center; gap: .6rem; }

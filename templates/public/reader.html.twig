@@ -11,6 +11,7 @@
     canonical: canonical,
     image: chapter_cover_url(chapter),
     type: 'article',
+    noindex: not chapter.published,
     json_ld: oneshot ? {
         '@context': 'https://schema.org',
         '@type': 'ComicStory',
@@ -58,6 +59,7 @@
 {% block main %}
     <main class="reader">
         <header class="reader-head wrap">
+            {% if not chapter.published %}<span class="badge draft">Draft preview</span>{% endif %}
             {% if oneshot %}
                 <h1>{{ work.title }}</h1>
                 {% if work.description %}<p class="muted">{{ work.description }}</p>{% endif %}

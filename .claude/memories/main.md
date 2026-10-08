@@ -1,4 +1,4 @@
-# main (project memory, also loaded on feature branches)
+# main (project memory)
 
 ## Status
 Phases 1-3 committed (skeleton, domain + EasyAdmin, auth + first-run installer).
@@ -66,7 +66,7 @@ Open question to the user: trim the `LATER.md` web-installer line to what is lef
 ## Decisions
 - Dev PHP container runs `php -S` (no FPM/Nginx until phase 6). Uploads capped at 200M via `conf.d/uploads.ini` in the Dockerfile; prod Nginx needs matching `client_max_body_size`.
 - Added beyond the brief, user-approved: `symfony/test-pack`, `phpstan-symfony`, `phpstan-phpunit`, `symfony/rate-limiter` (login throttling), `symfony/process` (vips CLI).
-- Branching (2026-10-08): `phase-1-skeleton` (phases 1-6, SEO, UI) renamed to `main`, now the trunk and deploy default (`app_ref: main`). New work goes on short-lived feature branches with their own `.claude/memories/<branch>.md`; the load hook injects `main.md` first. The Stop hook does not nag on `main`, so update this file by hand for project-wide facts.
+- Branching (2026-10-08): `phase-1-skeleton` renamed to `main`, the trunk and deploy default (`app_ref: main`). User rule: work directly on `main`, no feature branches (switching is distracting). The Stop hook does not nag on `main`, so update this file by hand at the end of each task.
 - Phase 2: `Chapter.number` NUMERIC(6,1); `Work.slug` unique; no cascade on `Work.chapters`; no roles column, `getRoles()` constant; oneshot rule enforced in a service later.
 - Installer (user-approved override of "installer out of scope" / "users by console only"): open form, first user only, no token (user removed it; install before a droplet is public). `UserProvisioner` is the one user-creation path.
 - Phase 4: libvips via CLI + `symfony/process`, not FFI. One WebP, max 1200 wide, Q80, never upscaled, height capped at 16383 (WebP limit) so very tall strips get narrower (a 900x30000 strip becomes 491x16383); slicing strips is a later candidate. Stored dimensions are the derivative's. Re-upload to a chapter with pages is rejected. Originals and derivatives use generated keys (no entry names: no traversal); 64 MB uncompressed cap per entry. Final derivative failure sets page `failed` via a WorkerMessageFailedEvent listener. Derivative key is derived (`derivatives/{chapter}/{page}.webp`), no column.
@@ -82,3 +82,18 @@ Open question to the user: trim the `LATER.md` web-installer line to what is lef
 - Error page `templates/bundles/TwigBundle/Exception/error.html.twig`; preview in dev at `/_error/404`.
 - Status: done, 29 tests + PHPStan green, screenshots checked desktop/mobile. Not rerun: Lighthouse. Uncommitted; user commits.
 - Possible follow-ups (not done): reader width cap on desktop, home ordering by recency (no timestamps yet).
+
+## Launch hardening (2026-10-08, audit item 1, committed 219780d)
+- Audit report: `~/Documents/tickets/goku-symfony/audit-2026-10-08/audit.md`. Items 1-2 done; next: item 3 (`published_at`: sitemap lastmod, datePublished, recency sort, new badges; optional chapter summary).
+- Unpublish retraction: user chose a short edge TTL (media `s-maxage=3600` + Last-Modified 304) over a Cloudflare purge API. New URLs alone do not retract: the old URLs stay cached at the edge. Not yet verified behind real Nginx/Cloudflare (304 through X-Accel, Cloudflare honouring `s-maxage` on images).
+- Security headers come from the `SecurityHeaders` listener, not Nginx. Only the `frame-ancestors` CSP so far; a full CSP needs nonces for inline styles, JSON-LD and importmap.
+- Installer window closed operationally: README says to create the first user with `app:user:create` over SSH before the DNS record exists.
+- `VIPS_BLOCK_UNTRUSTED=1` also blocks `vipsload` (.v) and `matload`, which the scramble pipeline uses for its own intermediates: set it only on calls reading the uploaded file. Dev libvips has `magickload`.
+- `BinaryFileResponse::prepare()` returns early for 304: no X-Accel-Redirect, no body.
+
+## Artist workflow (2026-10-08, audit item 2, uncommitted)
+- Draft preview: logged-in users read unpublished chapters (reader + chapter list, "Draft" badges, noindex). Gotcha: calling `getUser()` on the lazy firewall touches the session even for anonymous visitors, and Symfony then marks the response private, which killed edge caching on every public page (SeoTest caught it). `ReaderController::previewsDrafts()` checks `hasPreviousSession()` first.
+- "Page images in admin" became a Preview action that opens the real reader in a new tab: pages are scrambled, so `<img>` thumbnails are impossible, and per-page unscrambled previews would be another derivative size.
+- `ChapterPages` service: `clear()` (Delete pages action, confirm page + CSRF POST) and `deleteChapter()` (EasyAdmin `deleteEntity` override). Rows are deleted before files; both are refused while pages are pending/processing. Chapter delete also removes `incoming/{id}`.
+- Oneshot rule: `Assert\Callback` on Chapter (second chapter on a oneshot) and Work (switching to oneshot with more than one chapter). Factories don't fill `Work::$chapters`; tests clear the EM and reload.
+- `direction` field hidden in admin; LATER.md notes to restore it with the paged/RTL reader.

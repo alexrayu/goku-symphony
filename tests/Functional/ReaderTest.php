@@ -120,6 +120,29 @@ final class ReaderTest extends WebTestCase
         self::assertSame(['All chapters', 'Next'], $crawler->filter('.reader-head .chapter-nav a')->each(static fn ($a) => $a->text()));
     }
 
+    public function testLoggedInUsersPreviewDraftsPrivately(): void
+    {
+        $work = WorkFactory::createOne(['slug' => 'saga', 'type' => WorkType::Series]);
+        ChapterFactory::createOne(['work' => $work, 'number' => '1.0', 'published' => false]);
+
+        $this->client->request('GET', '/saga/chapter-1');
+        self::assertResponseStatusCodeSame(404);
+        $this->client->request('GET', '/saga');
+        self::assertResponseStatusCodeSame(404);
+
+        $this->client->loginUser(UserFactory::createOne());
+        $crawler = $this->client->request('GET', '/saga/chapter-1');
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('.reader-head .badge.draft', 'Draft preview');
+        self::assertSame('noindex', $crawler->filter('meta[name=robots]')->attr('content'));
+        // Never shared-cacheable: a draft must not reach Cloudflare.
+        self::assertStringContainsString('private', (string) $this->client->getResponse()->headers->get('Cache-Control'));
+
+        $this->client->request('GET', '/saga');
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('ul.list .badge.draft', 'Draft');
+    }
+
     public function testOneshotIsReadOnTheWorkPage(): void
     {
         $work = WorkFactory::createOne(['slug' => 'single', 'type' => WorkType::Oneshot]);

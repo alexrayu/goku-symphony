@@ -48,6 +48,7 @@
                     <a href="{{ path('chapter_read', {slug: work.slug, number: chapter.numberLabel}) }}">
                         <span class="chapter-number">Chapter {{ chapter.numberLabel }}</span>
                         {% if chapter.title %}<span class="chapter-title">{{ chapter.title }}</span>{% endif %}
+                        {% if not chapter.published %}<span class="badge draft">Draft</span>{% endif %}
                     </a>
                 </li>
             {% endfor %}

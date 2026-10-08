@@ -2,7 +2,7 @@
 
 Self-hosted manga/comics platform in Symfony. Portfolio piece and learning vehicle for a senior Drupal developer new to Doctrine, Messenger and Security. One install = one artist's site; invite-only posting, public reading. Full brief: `.claude/manga-platform-brief.md`.
 
-Branch memories live in `.claude/memories/<branch>.md` (committed, public repo), not in `~/.claude/tickets`. `main.md` is the project memory, loaded on every branch; feature branches add their own file.
+Branch memories live in `.claude/memories/<branch>.md` (committed, public repo), not in `~/.claude/tickets`. Work happens on `main` only (user rule: no feature branches), so `.claude/memories/main.md` is the one memory file.
 
 ## Stack (decided, do not relitigate; if one blocks you, stop and ask)
 

@@ -12,6 +12,7 @@ use App\Enum\WorkType;
 use App\Repository\ChapterRepository;
 use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
@@ -22,8 +23,10 @@ final class ReaderController extends AbstractController
 {
     private const SLUG = '[a-z0-9]+(?:-[a-z0-9]+)*';
 
-    public function __construct(private readonly ChapterRepository $chapters)
-    {
+    public function __construct(
+        private readonly ChapterRepository $chapters,
+        private readonly RequestStack $requestStack,
+    ) {
     }
 
     // One card per work with a published chapter: its first chapter gives the cover, its last the "latest" line.
@@ -45,16 +48,16 @@ final class ReaderController extends AbstractController
     #[Route('/{slug}', name: 'work_show', requirements: ['slug' => self::SLUG], methods: ['GET'], priority: -10)]
     public function work(#[MapEntity(mapping: ['slug' => 'slug'])] Work $work): Response
     {
-        $published = $this->chapters->findPublishedByWork($work);
-        if ([] === $published) {
+        $readable = $this->chapters->findReadableByWork($work, $this->previewsDrafts());
+        if ([] === $readable) {
             throw new NotFoundHttpException();
         }
 
         if (WorkType::Oneshot === $work->getType()) {
-            return $this->read($work, $published[0]->getNumber(), $published);
+            return $this->read($work, $readable[0]->getNumber(), $readable);
         }
 
-        return $this->render('public/work.html.twig', ['work' => $work, 'chapters' => $published]);
+        return $this->render('public/work.html.twig', ['work' => $work, 'chapters' => $readable]);
     }
 
     #[Route('/{slug}/chapter-{number}', name: 'chapter_read', requirements: ['slug' => self::SLUG, 'number' => '\d{1,5}(\.\d)?'], methods: ['GET'], priority: -10)]
@@ -65,23 +68,31 @@ final class ReaderController extends AbstractController
             return $this->redirectToRoute('work_show', ['slug' => $work->getSlug()], Response::HTTP_MOVED_PERMANENTLY);
         }
 
-        return $this->read($work, $number, $this->chapters->findPublishedByWork($work));
+        return $this->read($work, $number, $this->chapters->findReadableByWork($work, $this->previewsDrafts()));
     }
 
     /**
-     * @param list<Chapter> $published the work's published chapters, for previous/next links
+     * @param list<Chapter> $readable the work's readable chapters, for previous/next links
      */
-    private function read(Work $work, string $number, array $published): Response
+    private function read(Work $work, string $number, array $readable): Response
     {
-        $chapter = $this->chapters->findPublishedForReader($work, $number) ?? throw new NotFoundHttpException();
-        $index = array_search($chapter, $published, true);
+        $chapter = $this->chapters->findForReader($work, $number, $this->previewsDrafts()) ?? throw new NotFoundHttpException();
+        $index = array_search($chapter, $readable, true);
 
         return $this->render('public/reader.html.twig', [
             'work' => $work,
             'chapter' => $chapter,
-            'previous' => $published[$index - 1] ?? null,
-            'next' => $published[$index + 1] ?? null,
+            'previous' => $readable[$index - 1] ?? null,
+            'next' => $readable[$index + 1] ?? null,
             'pages' => $chapter->getPages()->filter(static fn (Page $p): bool => PageStatus::Ready === $p->getStatus()),
         ]);
+    }
+
+    // Logged-in users read drafts before release. Their responses are private (session),
+    // so PublicPageCache never lets a draft into the shared cache. No session cookie means
+    // anonymous: skip the user lookup, which would touch the session and make every page private.
+    private function previewsDrafts(): bool
+    {
+        return true === $this->requestStack->getMainRequest()?->hasPreviousSession() && null !== $this->getUser();
     }
 }

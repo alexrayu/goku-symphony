@@ -10,6 +10,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 #[ORM\Entity(repositoryClass: WorkRepository::class)]
 #[ORM\Table(name: 'work')]
@@ -109,5 +110,17 @@ class Work
     public function __toString(): string
     {
         return $this->title;
+    }
+
+    // A oneshot shows exactly one chapter: see Chapter::validateOneshot() for the other side.
+    #[Assert\Callback]
+    public function validateOneshot(ExecutionContextInterface $context): void
+    {
+        if (WorkType::Oneshot === $this->type && $this->chapters->count() > 1) {
+            $context->buildViolation('A oneshot has a single chapter; this work has {{ count }}.')
+                ->setParameter('{{ count }}', (string) $this->chapters->count())
+                ->atPath('type')
+                ->addViolation();
+        }
     }
 }

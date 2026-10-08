@@ -13,3 +13,7 @@ Deferred until the vertical slice is live.
 - Release zip with `vendor/` and compiled assets; root `.htaccess` rewrite into `public/` for hosts that can't change the docroot
 - A "shared" Docker Compose profile (php-apache, MariaDB, no Redis, no vips, low limits) to test the fallbacks
 - License choice
+
+## Reader
+
+- Reading direction: `Chapter.direction` (ltr, rtl, vertical) is stored but hidden in admin, because the reader only scrolls vertically. Show the field again once the paged/RTL reader exists.

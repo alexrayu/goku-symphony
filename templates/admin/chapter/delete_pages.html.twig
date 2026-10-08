@@ -1,0 +1,14 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{% block content_title %}Delete pages: {{ chapter }}{% endblock %}
+
+{% block main %}
+    <form method="post">
+        <input type="hidden" name="_token" value="{{ csrf_token('chapter_delete_pages') }}">
+        <p>
+            This deletes all {{ chapter.pages|length }} pages of this chapter and their stored images, so a new archive can be uploaded.
+            {% if chapter.published %}The chapter stays published and shows no pages until the new upload is processed.{% endif %}
+        </p>
+        <button class="btn btn-danger" type="submit">Delete {{ chapter.pages|length }} pages</button>
+    </form>
+{% endblock %}

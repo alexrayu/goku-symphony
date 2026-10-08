@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Enum\ReadingDirection;
+use App\Enum\WorkType;
 use App\Repository\ChapterRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 #[ORM\Entity(repositoryClass: ChapterRepository::class)]
 #[ORM\Table(name: 'chapter')]
@@ -132,5 +135,23 @@ class Chapter
     public function __toString(): string
     {
         return sprintf('%s #%s', $this->work, $this->number);
+    }
+
+    // A oneshot is read from its single chapter; a second one would never be shown.
+    #[Assert\Callback]
+    public function validateOneshot(ExecutionContextInterface $context): void
+    {
+        if (WorkType::Oneshot !== $this->work->getType()) {
+            return;
+        }
+        foreach ($this->work->getChapters() as $chapter) {
+            if ($chapter !== $this) {
+                $context->buildViolation('This oneshot already has a chapter. Make the work a series to add more.')
+                    ->atPath('work')
+                    ->addViolation();
+
+                return;
+            }
+        }
     }
 }

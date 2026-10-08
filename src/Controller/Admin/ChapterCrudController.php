@@ -6,8 +6,9 @@ namespace App\Controller\Admin;
 
 use App\Entity\Chapter;
 use App\Entity\Work;
-use App\Enum\ReadingDirection;
+use App\Enum\WorkType;
 use App\Ingest\ArchiveIngestor;
+use App\Ingest\ChapterPages;
 use Doctrine\ORM\EntityManagerInterface;
 use EasyCorp\Bundle\EasyAdminBundle\Attribute\AdminRoute;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Action;
@@ -16,7 +17,6 @@ use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
 use EasyCorp\Bundle\EasyAdminBundle\Field\AssociationField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\BooleanField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\ChoiceField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\CollectionField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\NumberField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
@@ -46,8 +46,10 @@ final class ChapterCrudController extends AbstractCrudController
             ->setDefaultSort(['work' => 'ASC', 'number' => 'ASC']);
     }
 
-    public function __construct(private readonly EntityManagerInterface $em)
-    {
+    public function __construct(
+        private readonly EntityManagerInterface $em,
+        private readonly ChapterPages $chapterPages,
+    ) {
     }
 
     // Chapter requires a Work; preselect the newest one (the choice field only accepts managed entities).
@@ -67,7 +69,6 @@ final class ChapterCrudController extends AbstractCrudController
         yield NumberField::new('number')->setNumDecimals(1)->setStoredAsString()->setNumberFormat('%.1f')
             ->formatValue(static fn (mixed $value, Chapter $chapter): string => $chapter->getNumberLabel());
         yield TextField::new('title');
-        yield ChoiceField::new('direction')->setChoices(ReadingDirection::cases());
         yield BooleanField::new('published');
         yield CollectionField::new('pages')->onlyOnDetail()->setTemplatePath('admin/chapter/pages.html.twig');
     }
@@ -75,11 +76,61 @@ final class ChapterCrudController extends AbstractCrudController
     public function configureActions(Actions $actions): Actions
     {
         $upload = Action::new('uploadPages', 'Upload pages', 'fa fa-file-zipper')->linkToCrudAction('uploadPages');
+        // The real reader, drafts included for logged-in users: pages are scrambled, so this is the only view of them.
+        $preview = Action::new('preview', 'Preview', 'fa fa-eye')
+            ->linkToUrl(fn (Chapter $chapter): string => $this->readerUrl($chapter))
+            ->setHtmlAttributes(['target' => '_blank']);
+        $deletePages = Action::new('deletePages', 'Delete pages', 'fa fa-trash-can')->linkToCrudAction('deletePages')
+            ->displayIf(static fn (Chapter $chapter): bool => !$chapter->getPages()->isEmpty());
 
         return $actions
             ->add(Crud::PAGE_INDEX, Action::DETAIL)
+            ->add(Crud::PAGE_INDEX, $preview)
             ->add(Crud::PAGE_INDEX, $upload)
-            ->add(Crud::PAGE_DETAIL, $upload);
+            ->add(Crud::PAGE_DETAIL, $preview)
+            ->add(Crud::PAGE_DETAIL, $upload)
+            ->add(Crud::PAGE_DETAIL, $deletePages);
+    }
+
+    // Stored files go with the chapter; a chapter still processing is kept, with the reason shown.
+    public function deleteEntity(EntityManagerInterface $entityManager, object $entityInstance): void
+    {
+        try {
+            $this->chapterPages->deleteChapter($entityInstance);
+        } catch (\InvalidArgumentException $e) {
+            $this->addFlash('danger', $e->getMessage());
+        }
+    }
+
+    // Confirm page, then a CSRF-checked POST: frees the chapter for a new upload.
+    #[AdminRoute('/{id}/delete-pages', 'delete_pages', options: ['methods' => ['GET', 'POST']])]
+    public function deletePages(#[MapEntity] Chapter $chapter, Request $request, AdminUrlGenerator $urlGenerator): Response
+    {
+        if ($request->isMethod('POST')) {
+            try {
+                if (!$this->isCsrfTokenValid('chapter_delete_pages', (string) $request->request->get('_token'))) {
+                    throw new \InvalidArgumentException('Invalid CSRF token. Reload the page and try again.');
+                }
+                $this->chapterPages->clear($chapter);
+                $this->addFlash('success', 'Pages deleted. Upload a new archive when ready.');
+
+                return $this->redirect($urlGenerator->setController(self::class)->setAction(Action::DETAIL)
+                    ->setEntityId($chapter->getId())->generateUrl());
+            } catch (\InvalidArgumentException $e) {
+                $this->addFlash('danger', $e->getMessage());
+            }
+        }
+
+        return $this->render('admin/chapter/delete_pages.html.twig', ['chapter' => $chapter]);
+    }
+
+    private function readerUrl(Chapter $chapter): string
+    {
+        $work = $chapter->getWork();
+
+        return WorkType::Oneshot === $work->getType()
+            ? $this->generateUrl('work_show', ['slug' => $work->getSlug()])
+            : $this->generateUrl('chapter_read', ['slug' => $work->getSlug(), 'number' => $chapter->getNumberLabel()]);
     }
 
     #[AdminRoute('/{id}/upload', 'upload', options: ['methods' => ['GET', 'POST']])]
