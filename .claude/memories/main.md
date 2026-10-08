@@ -84,16 +84,25 @@ Open question to the user: trim the `LATER.md` web-installer line to what is lef
 - Possible follow-ups (not done): reader width cap on desktop, home ordering by recency (no timestamps yet).
 
 ## Launch hardening (2026-10-08, audit item 1, committed 219780d)
-- Audit report: `~/Documents/tickets/goku-symfony/audit-2026-10-08/audit.md`. Items 1-2 done; next: item 3 (`published_at`: sitemap lastmod, datePublished, recency sort, new badges; optional chapter summary).
+- Audit report: `~/Documents/tickets/goku-symfony/audit-2026-10-08/audit.md`. Items 1-3 done; next: item 4, branding (`SITE_ACCENT`, site settings for bio/links/logo, optional work cover).
 - Unpublish retraction: user chose a short edge TTL (media `s-maxage=3600` + Last-Modified 304) over a Cloudflare purge API. New URLs alone do not retract: the old URLs stay cached at the edge. Not yet verified behind real Nginx/Cloudflare (304 through X-Accel, Cloudflare honouring `s-maxage` on images).
 - Security headers come from the `SecurityHeaders` listener, not Nginx. Only the `frame-ancestors` CSP so far; a full CSP needs nonces for inline styles, JSON-LD and importmap.
 - Installer window closed operationally: README says to create the first user with `app:user:create` over SSH before the DNS record exists.
 - `VIPS_BLOCK_UNTRUSTED=1` also blocks `vipsload` (.v) and `matload`, which the scramble pipeline uses for its own intermediates: set it only on calls reading the uploaded file. Dev libvips has `magickload`.
 - `BinaryFileResponse::prepare()` returns early for 304: no X-Accel-Redirect, no body.
 
-## Artist workflow (2026-10-08, audit item 2, uncommitted)
+## Artist workflow (2026-10-08, audit item 2, committed 90d1430)
 - Draft preview: logged-in users read unpublished chapters (reader + chapter list, "Draft" badges, noindex). Gotcha: calling `getUser()` on the lazy firewall touches the session even for anonymous visitors, and Symfony then marks the response private, which killed edge caching on every public page (SeoTest caught it). `ReaderController::previewsDrafts()` checks `hasPreviousSession()` first.
 - "Page images in admin" became a Preview action that opens the real reader in a new tab: pages are scrambled, so `<img>` thumbnails are impossible, and per-page unscrambled previews would be another derivative size.
 - `ChapterPages` service: `clear()` (Delete pages action, confirm page + CSRF POST) and `deleteChapter()` (EasyAdmin `deleteEntity` override). Rows are deleted before files; both are refused while pages are pending/processing. Chapter delete also removes `incoming/{id}`.
 - Oneshot rule: `Assert\Callback` on Chapter (second chapter on a oneshot) and Work (switching to oneshot with more than one chapter). Factories don't fill `Work::$chapters`; tests clear the EM and reload.
 - `direction` field hidden in admin; LATER.md notes to restore it with the paged/RTL reader.
+
+## Dates and summaries (2026-10-08, audit item 3, uncommitted)
+- `Chapter.publishedAt` is set by `setPublished(true)` only when null (first publication; kept through unpublish/republish), constructor included. No setter on purpose; tests use reflection (`ChapterPublicationTest::publishedAgo`). The migration backfilled existing published chapters to the migration time.
+- Plain `new \DateTimeImmutable()` in the entity: `symfony/clock` is only transitive, and making it direct needs user approval.
+- `isNew()` = published within `Chapter::NEW_FOR` (7 days). Home cards and chapter rows show a "New" badge; HTML stays edge-cached 5 min, which is fine for a day-scale flag.
+- `ChapterRepository::findPublishedGroupedByWork()` replaced `findAllPublishedWithWork()`: one query, grouped in PHP, newest `updatedAt` (latest first publication) first. Used by home and sitemap (lastmod on every URL).
+- Summary: reader header text, meta description and ComicIssue description (series); a oneshot keeps the work description.
+- PHPStan remembers getter results across calls to setters on the same object (`assertNull`, then `setPublished`, then `assertNotNull` is flagged as impossible); use separate instances.
+- Dev demo dates are spread (Neon Tide ch. 4 two days ago, Garden three days ago), and Neon Tide ch. 4 has a summary.

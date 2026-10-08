@@ -1,15 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
+{# lastmod is the first publication: of the newest chapter for home and works, of the chapter itself
+   for chapter URLs. Oneshots have no chapter URL. #}
+{% macro url(loc, date) %}
+    <url><loc>{{ loc }}</loc>{% if date %}<lastmod>{{ date|date('c') }}</lastmod>{% endif %}</url>
+{% endmacro %}
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-    <url><loc>{{ url('home') }}</loc></url>
-{# Chapters arrive grouped by work: emit the work URL when the work changes. Oneshots have no chapter URL. #}
-{% set previous = null %}
-{% for chapter in chapters %}
-    {% if chapter.work is not same as(previous) %}
-    <url><loc>{{ url('work_show', {slug: chapter.work.slug}) }}</loc></url>
-        {% set previous = chapter.work %}
-    {% endif %}
-    {% if chapter.work.type.value == 'series' %}
-    <url><loc>{{ url('chapter_read', {slug: chapter.work.slug, number: chapter.numberLabel}) }}</loc></url>
+{{ _self.url(url('home'), (groups|first).updatedAt ?? null) }}
+{% for group in groups %}
+{{ _self.url(url('work_show', {slug: group.work.slug}), group.updatedAt) }}
+    {% if group.work.type.value == 'series' %}
+        {% for chapter in group.chapters %}
+{{ _self.url(url('chapter_read', {slug: group.work.slug, number: chapter.numberLabel}), chapter.publishedAt) }}
+        {% endfor %}
     {% endif %}
 {% endfor %}
 </urlset>

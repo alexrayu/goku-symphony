@@ -29,19 +29,11 @@ final class ReaderController extends AbstractController
     ) {
     }
 
-    // One card per work with a published chapter: its first chapter gives the cover, its last the "latest" line.
+    // One card per work with a published chapter, most recently updated first.
     #[Route('/', name: 'home', methods: ['GET'])]
     public function home(): Response
     {
-        $shelf = [];
-        foreach ($this->chapters->findAllPublishedWithWork() as $chapter) {
-            $work = $chapter->getWork();
-            $shelf[$work->getId()] ??= ['work' => $work, 'first' => $chapter, 'count' => 0];
-            $shelf[$work->getId()]['latest'] = $chapter;
-            ++$shelf[$work->getId()]['count'];
-        }
-
-        return $this->render('public/home.html.twig', ['shelf' => $shelf]);
+        return $this->render('public/home.html.twig', ['shelf' => $this->chapters->findPublishedGroupedByWork()]);
     }
 
     // Series: chapter list. Oneshot: its single chapter is read right here, no list.

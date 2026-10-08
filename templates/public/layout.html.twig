@@ -63,6 +63,9 @@
         .card p { margin: 0; color: var(--muted); font-size: .875rem; }
         .badge { display: inline-block; padding: .1rem .5rem; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); font-size: .75rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
         .badge.draft { border-color: var(--accent); color: var(--accent); }
+        .badge.new { border-color: var(--accent); background: var(--accent); color: var(--on-accent); }
+        .card a { position: relative; }
+        .card .badge.new { position: absolute; top: .5rem; left: .5rem; z-index: 1; }
         .empty { padding: 3rem 1rem; border: 1px dashed var(--line); border-radius: var(--radius); text-align: center; }
 
         /* Work: cover beside title and actions, then the chapter list */
@@ -77,9 +80,10 @@
         ul.list li + li { border-top: 1px solid var(--line); }
         ul.list a { display: flex; align-items: baseline; gap: .75rem; padding: .9rem 1.1rem; transition: background .15s; }
         ul.list a:hover { background: var(--surface); }
-        ul.list a::after { content: "\203A"; margin-left: auto; color: var(--muted); }
+        ul.list a::after { content: "\203A"; margin-left: .75rem; color: var(--muted); }
+        .chapter-date { margin-left: auto; font-size: .875rem; white-space: nowrap; }
         .chapter-number { flex: none; font-weight: 600; }
-        .chapter-title { color: var(--muted); }
+        .chapter-title { min-width: 0; overflow: hidden; color: var(--muted); text-overflow: ellipsis; white-space: nowrap; }
         @media (max-width: 600px) {
             .work-head { grid-template: "cover info" auto "actions actions" auto / 7.5rem 1fr; gap: 1.25rem 1rem; padding-top: 1.5rem; }
             .work-head > div { align-self: center; }
@@ -92,6 +96,7 @@
         .reader-head .badge { margin-bottom: .6rem; }
         .reader-head h1 { margin: 0; font-size: 1.5rem; }
         .reader-head p { margin: .35rem 0 0; }
+        .reader-head .summary { max-width: 40rem; margin: .75rem auto 0; }
         .chapter-nav { display: flex; flex-wrap: wrap; justify-content: center; gap: .6rem; }
         .reader-head .chapter-nav { margin-top: 1rem; }
         .pages { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }

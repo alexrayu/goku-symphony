@@ -62,7 +62,12 @@ final class ReaderTest extends WebTestCase
         $crawler = $this->client->request('GET', '/saga');
 
         self::assertResponseIsSuccessful();
-        self::assertSame(['Chapter 1.5 Extra', 'Chapter 2'], $crawler->filter('ul.list a')->each(static fn ($a) => trim($a->text())));
+        self::assertSame(['Chapter 1.5 Extra', 'Chapter 2'], $crawler->filter('ul.list a')->each(
+            static fn ($a) => implode(' ', $a->filter('.chapter-number, .chapter-title')->each(static fn ($t) => $t->text())),
+        ));
+        // Freshly published: dated and marked new.
+        self::assertCount(2, $crawler->filter('ul.list .badge.new'));
+        self::assertCount(2, $crawler->filter('ul.list time[datetime]'));
         self::assertSame('/saga/chapter-1.5', $crawler->filter('ul.list a')->first()->attr('href'));
         $this->client->request('GET', '/saga/chapter-3');
         self::assertResponseStatusCodeSame(404);

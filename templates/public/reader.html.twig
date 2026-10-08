@@ -7,7 +7,7 @@
 {% set canonical = oneshot ? work_url : url('chapter_read', {slug: work.slug, number: chapter.numberLabel}) %}
 {% set seo = {
     title: (oneshot ? work.title : work.title ~ ' ' ~ chapter_name) ~ ' | ' ~ site_name,
-    description: oneshot and work.description ? work.description : 'Read ' ~ work.title ~ (oneshot ? '' : ' ' ~ chapter_name) ~ ' online on ' ~ site_name ~ '.',
+    description: (oneshot ? work.description : chapter.summary) ?: 'Read ' ~ work.title ~ (oneshot ? '' : ' ' ~ chapter_name) ~ ' online on ' ~ site_name ~ '.',
     canonical: canonical,
     image: chapter_cover_url(chapter),
     type: 'article',
@@ -19,6 +19,7 @@
         description: work.description,
         url: canonical,
         image: chapter_cover_url(chapter),
+        datePublished: chapter.publishedAt ? chapter.publishedAt|date('c') : null,
     } : {
         '@context': 'https://schema.org',
         '@graph': [
@@ -26,6 +27,8 @@
                 '@type': 'ComicIssue',
                 name: chapter_name,
                 issueNumber: chapter.numberLabel,
+                description: chapter.summary,
+                datePublished: chapter.publishedAt ? chapter.publishedAt|date('c') : null,
                 url: canonical,
                 image: chapter_cover_url(chapter),
                 isPartOf: {'@type': 'ComicSeries', name: work.title, url: work_url},
@@ -66,6 +69,7 @@
             {% else %}
                 <h1>Chapter {{ chapter.numberLabel }}</h1>
                 {% if chapter.title %}<p class="muted">{{ chapter.title }}</p>{% endif %}
+                {% if chapter.summary %}<p class="summary">{{ chapter.summary }}</p>{% endif %}
                 <nav class="chapter-nav" aria-label="Chapters">
                     {{ _self.chapter_link(work, previous, 'Previous') }}
                     <a class="button" href="{{ work_path }}">All chapters</a>

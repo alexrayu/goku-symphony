@@ -20,16 +20,18 @@
             <ul class="shelf">
                 {% for item in shelf %}
                     {% set oneshot = item.work.type.value == 'oneshot' %}
+                    {% set latest = item.chapters|last %}
                     <li class="card">
                         <a href="{{ path('work_show', {slug: item.work.slug}) }}">
-                            <img class="cover" src="{{ chapter_thumb_url(item.first) }}" alt="" width="400" height="560"
+                            {% if item.chapters|filter(c => c.new) is not empty %}<span class="badge new">New</span>{% endif %}
+                            <img class="cover" src="{{ chapter_thumb_url(item.chapters|first) }}" alt="" width="400" height="560"
                                  {{ loop.index > 6 ? 'loading="lazy"' }} decoding="async">
                             <h3>{{ item.work.title }}</h3>
                             <p>
                                 {% if oneshot %}
                                     Oneshot
                                 {% else %}
-                                    {{ item.count }} {{ item.count == 1 ? 'chapter' : 'chapters' }} &middot; Ch. {{ item.latest.numberLabel }}
+                                    {{ item.chapters|length }} {{ item.chapters|length == 1 ? 'chapter' : 'chapters' }} &middot; Ch. {{ latest.numberLabel }}
                                 {% endif %}
                             </p>
                         </a>

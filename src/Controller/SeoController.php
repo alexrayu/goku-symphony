@@ -20,6 +20,6 @@ final class SeoController extends AbstractController
     #[Route('/sitemap.xml', name: 'sitemap', methods: ['GET'], format: 'xml')]
     public function sitemap(ChapterRepository $chapters): Response
     {
-        return $this->render('seo/sitemap.xml.twig', ['chapters' => $chapters->findAllPublishedWithWork()]);
+        return $this->render('seo/sitemap.xml.twig', ['groups' => $chapters->findPublishedGroupedByWork()]);
     }
 }

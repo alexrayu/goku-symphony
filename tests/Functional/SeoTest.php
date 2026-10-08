@@ -32,7 +32,7 @@ final class SeoTest extends WebTestCase
     public function testChapterPageCarriesMetadataAndStructuredData(): void
     {
         $work = WorkFactory::createOne(['title' => 'Saga', 'slug' => 'saga', 'type' => WorkType::Series]);
-        $chapter = ChapterFactory::createOne(['work' => $work, 'number' => '2.0', 'title' => 'Storm', 'published' => true]);
+        $chapter = ChapterFactory::createOne(['work' => $work, 'number' => '2.0', 'title' => 'Storm', 'published' => true, 'summary' => 'The harbour floods.']);
 
         $crawler = $this->client->request('GET', '/saga/chapter-2');
 
@@ -43,12 +43,15 @@ final class SeoTest extends WebTestCase
             sprintf('http://localhost/media/cover/%d.jpg', $chapter->getId()),
             $crawler->filter('meta[property="og:image"]')->attr('content'),
         );
-        self::assertStringContainsString('Saga Chapter 2', (string) $crawler->filter('meta[name=description]')->attr('content'));
+        // Canvas pages carry no text: the summary is the chapter's description and visible copy.
+        self::assertSame('The harbour floods.', $crawler->filter('meta[name=description]')->attr('content'));
+        self::assertSelectorTextSame('.reader-head .summary', 'The harbour floods.');
         self::assertSame('en', $crawler->filter('html')->attr('lang'));
 
         $graph = json_decode($crawler->filter('script[type="application/ld+json"]')->text(), true, flags: \JSON_THROW_ON_ERROR)['@graph'];
         self::assertSame(['ComicIssue', 'BreadcrumbList'], array_column($graph, '@type'));
         self::assertSame('Saga', $graph[0]['isPartOf']['name']);
+        self::assertSame($chapter->getPublishedAt()?->format('c'), $graph[0]['datePublished']);
     }
 
     public function testRobotsAndSitemapListOnlyPublicUrls(): void
@@ -71,6 +74,8 @@ final class SeoTest extends WebTestCase
         $urls = array_map('strval', iterator_to_array($sitemap->xpath('//*[local-name()="loc"]') ?: [], false));
         sort($urls);
         self::assertSame(['http://localhost/', 'http://localhost/saga', 'http://localhost/saga/chapter-1', 'http://localhost/single'], $urls);
+        // Every URL is dated by a first publication.
+        self::assertCount(\count($urls), $sitemap->xpath('//*[local-name()="lastmod"]') ?: []);
     }
 
     public function testAnonymousPagesAreSharedCacheableAndRevalidate(): void

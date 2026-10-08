@@ -18,6 +18,9 @@ use Symfony\Component\Validator\Context\ExecutionContextInterface;
 #[ORM\UniqueConstraint(name: 'chapter_work_number', columns: ['work_id', 'number'])]
 class Chapter
 {
+    // How long a chapter counts as new after its first publication.
+    private const NEW_FOR = '7 days';
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -34,6 +37,14 @@ class Chapter
     #[ORM\OneToMany(targetEntity: Page::class, mappedBy: 'chapter', cascade: ['persist', 'remove'], orphanRemoval: true)]
     #[ORM\OrderBy(['position' => 'ASC'])]
     private Collection $pages;
+
+    // First publication; kept through unpublish/republish. Drives sitemap lastmod, datePublished and "new".
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $publishedAt = null;
+
+    // Optional text for the reader header and meta description: the pages themselves are canvas.
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $summary = null;
 
     public function __construct(
         // Owning side: holds the work_id FK. Doctrine reads only this side
@@ -53,6 +64,7 @@ class Chapter
         private bool $published = false,
     ) {
         $this->pages = new ArrayCollection();
+        $this->setPublished($published);
     }
 
     public function getId(): ?int
@@ -122,6 +134,31 @@ class Chapter
     public function setPublished(bool $published): static
     {
         $this->published = $published;
+        if ($published) {
+            $this->publishedAt ??= new \DateTimeImmutable();
+        }
+
+        return $this;
+    }
+
+    public function getPublishedAt(): ?\DateTimeImmutable
+    {
+        return $this->publishedAt;
+    }
+
+    public function isNew(): bool
+    {
+        return $this->published && $this->publishedAt > new \DateTimeImmutable('-'.self::NEW_FOR);
+    }
+
+    public function getSummary(): ?string
+    {
+        return $this->summary;
+    }
+
+    public function setSummary(?string $summary): static
+    {
+        $this->summary = $summary;
 
         return $this;
     }

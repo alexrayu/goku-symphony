@@ -80,13 +80,15 @@ class ChapterRepository extends ServiceEntityRepository
     }
 
     /**
-     * Every published chapter with its work, in one query, for the sitemap.
+     * Every published chapter, grouped per work and most recently updated work first, in one query:
+     * the home shelf and the sitemap. updatedAt is the work's latest first publication.
      *
-     * @return list<Chapter>
+     * @return list<array{work: Work, chapters: non-empty-list<Chapter>, updatedAt: ?\DateTimeImmutable}>
      */
-    public function findAllPublishedWithWork(): array
+    public function findPublishedGroupedByWork(): array
     {
-        return $this->createQueryBuilder('c')
+        /** @var list<Chapter> $chapters */
+        $chapters = $this->createQueryBuilder('c')
             ->addSelect('w')
             ->join('c.work', 'w')
             ->where('c.published = true')
@@ -95,5 +97,19 @@ class ChapterRepository extends ServiceEntityRepository
             ->addOrderBy('c.number', 'ASC')
             ->getQuery()
             ->getResult();
+
+        $groups = [];
+        foreach ($chapters as $chapter) {
+            $id = (int) $chapter->getWork()->getId();
+            $groups[$id] ??= ['work' => $chapter->getWork(), 'chapters' => [], 'updatedAt' => null];
+            $groups[$id]['chapters'][] = $chapter;
+            if ($chapter->getPublishedAt() > $groups[$id]['updatedAt']) {
+                $groups[$id]['updatedAt'] = $chapter->getPublishedAt();
+            }
+        }
+        // Stable sort: equal dates keep the title order.
+        usort($groups, static fn (array $a, array $b): int => $b['updatedAt'] <=> $a['updatedAt']);
+
+        return $groups;
     }
 }

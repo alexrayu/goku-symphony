@@ -18,8 +18,10 @@ use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
 use EasyCorp\Bundle\EasyAdminBundle\Field\AssociationField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\BooleanField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\CollectionField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\DateTimeField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\NumberField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\TextareaField;
 use EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGenerator;
 use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -69,7 +71,11 @@ final class ChapterCrudController extends AbstractCrudController
         yield NumberField::new('number')->setNumDecimals(1)->setStoredAsString()->setNumberFormat('%.1f')
             ->formatValue(static fn (mixed $value, Chapter $chapter): string => $chapter->getNumberLabel());
         yield TextField::new('title');
+        yield TextareaField::new('summary')->hideOnIndex()
+            ->setHelp('Optional. Shown above the pages and used as the description in search results and link previews.');
         yield BooleanField::new('published');
+        // Set on first publication, never edited by hand.
+        yield DateTimeField::new('publishedAt', 'First published')->hideOnForm();
         yield CollectionField::new('pages')->onlyOnDetail()->setTemplatePath('admin/chapter/pages.html.twig');
     }
 
