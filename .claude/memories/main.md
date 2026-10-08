@@ -1,4 +1,4 @@
-# phase-1-skeleton
+# main (project memory, also loaded on feature branches)
 
 ## Status
 Phases 1-3 committed (skeleton, domain + EasyAdmin, auth + first-run installer).
@@ -20,7 +20,7 @@ Open question to the user: trim the `LATER.md` web-installer line to what is lef
 - Droplet Ubuntu 24.04; PHP 8.4 from ondrej PPA (8.3 rejected: 26 locked packages need 8.4). PG 16, Redis 7 from distro.
 - Deploy = git clone of public GitHub repo (`alexrayu/goku-symphony`) into releases/, symlink switch.
 - Secrets in untracked `ansible/secrets.yml` + committed example; no vault.
-- No droplet yet: verify against a local Ubuntu 24.04 systemd container. Harness (Dockerfile, inventory, key, self-signed cert, Playwright venv, e2e.py) in `~/Documents/tickets/goku-symfony/phase-6/`; container `goku-prodtest`, ports 2222/8443, host `goku.test`. Deploy test: `docker cp` a bare clone to `/opt/goku.git` (chown goku), `-e app_repo=file:///opt/goku.git -e app_ref=phase-1-skeleton`. Test secrets go in gitignored `ansible/secrets.yml`; delete after.
+- No droplet yet: verify against a local Ubuntu 24.04 systemd container. Harness (Dockerfile, inventory, key, self-signed cert, Playwright venv, e2e.py) in `~/Documents/tickets/goku-symfony/phase-6/`; container `goku-prodtest`, ports 2222/8443, host `goku.test`. Deploy test: `docker cp` a bare clone to `/opt/goku.git` (chown goku), `-e app_repo=file:///opt/goku.git -e app_ref=main`. Test secrets go in gitignored `ansible/secrets.yml`; delete after.
 - Status 2026-10-06: phase 6 done locally. Provision idempotent; two deploys (release switch, worker restarts into new release) and full slice E2E pass in the container. Container removed, image `goku-prodtest` kept; test `ansible/secrets.yml` deleted. Next: user creates the droplet, fills inventory host, `app_hostname`, real `secrets.yml` (origin cert), runs `make provision` and `make deploy REF=...`; slice done when a stranger opens the reader URL.
 - MediaController uses BinaryFileResponse on `STORAGE_PATH` (not Flysystem) so `SYMFONY_TRUST_X_SENDFILE_TYPE_HEADER=1` + Nginx `X-Accel-Mapping` hand the body to Nginx.
 - Cloudflare Free caps request bodies at 100 MB; upload limit stays 200M (origin only). Told user.
@@ -65,7 +65,7 @@ Open question to the user: trim the `LATER.md` web-installer line to what is lef
 ## Decisions
 - Dev PHP container runs `php -S` (no FPM/Nginx until phase 6). Uploads capped at 200M via `conf.d/uploads.ini` in the Dockerfile; prod Nginx needs matching `client_max_body_size`.
 - Added beyond the brief, user-approved: `symfony/test-pack`, `phpstan-symfony`, `phpstan-phpunit`, `symfony/rate-limiter` (login throttling), `symfony/process` (vips CLI).
-- Work happens on `phase-1-skeleton` because memory hooks skip `master`.
+- Branching (2026-10-08): `phase-1-skeleton` (phases 1-6, SEO, UI) renamed to `main`, now the trunk and deploy default (`app_ref: main`). New work goes on short-lived feature branches with their own `.claude/memories/<branch>.md`; the load hook injects `main.md` first. The Stop hook does not nag on `main`, so update this file by hand for project-wide facts.
 - Phase 2: `Chapter.number` NUMERIC(6,1); `Work.slug` unique; no cascade on `Work.chapters`; no roles column, `getRoles()` constant; oneshot rule enforced in a service later.
 - Installer (user-approved override of "installer out of scope" / "users by console only"): open form, first user only, no token (user removed it; install before a droplet is public). `UserProvisioner` is the one user-creation path.
 - Phase 4: libvips via CLI + `symfony/process`, not FFI. One WebP, max 1200 wide, Q80, never upscaled, height capped at 16383 (WebP limit) so very tall strips get narrower (a 900x30000 strip becomes 491x16383); slicing strips is a later candidate. Stored dimensions are the derivative's. Re-upload to a chapter with pages is rejected. Originals and derivatives use generated keys (no entry names: no traversal); 64 MB uncompressed cap per entry. Final derivative failure sets page `failed` via a WorkerMessageFailedEvent listener. Derivative key is derived (`derivatives/{chapter}/{page}.webp`), no column.
