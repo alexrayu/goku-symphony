@@ -9,6 +9,7 @@ use App\Repository\WorkRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
@@ -32,13 +33,23 @@ class Work
     #[ORM\OrderBy(['number' => 'ASC'])]
     private Collection $chapters;
 
+    // Set when a chosen cover is uploaded, bumped on each replacement and part of its URLs.
+    // Null: the first chapter's first page serves as the cover.
+    #[ORM\Column(nullable: true)]
+    private ?int $coverVersion = null;
+
+    // Form-only, never persisted: processed into storage by the admin controller.
+    #[Assert\Image(maxSize: '20M', mimeTypes: ['image/png', 'image/jpeg', 'image/webp'], maxWidth: 8000, maxHeight: 8000)]
+    private ?File $coverUpload = null;
+    private bool $removeCover = false;
+
     public function __construct(
         #[ORM\Column(length: 255)]
         private string $title,
         // Public URL /{slug}. The reserved names are the fixed top-level paths, which match before work URLs.
         #[ORM\Column(length: 255, unique: true)]
         #[Assert\Regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', message: 'Use lowercase letters, digits and single hyphens.')]
-        #[Assert\Regex('/^(admin|login|logout|install|media|assets|bundles)$/', message: 'This slug is reserved for a site page.', match: false)]
+        #[Assert\Regex('/^(admin|login|logout|install|media|assets|bundles|about)$/', message: 'This slug is reserved for a site page.', match: false)]
         private string $slug,
         #[ORM\Column(length: 16, enumType: WorkType::class)]
         private WorkType $type = WorkType::Series,
@@ -105,6 +116,42 @@ class Work
     public function getChapters(): Collection
     {
         return $this->chapters;
+    }
+
+    public function getCoverVersion(): ?int
+    {
+        return $this->coverVersion;
+    }
+
+    public function setCoverVersion(?int $coverVersion): static
+    {
+        $this->coverVersion = $coverVersion;
+
+        return $this;
+    }
+
+    public function getCoverUpload(): ?File
+    {
+        return $this->coverUpload;
+    }
+
+    public function setCoverUpload(?File $coverUpload): static
+    {
+        $this->coverUpload = $coverUpload;
+
+        return $this;
+    }
+
+    public function isRemoveCover(): bool
+    {
+        return $this->removeCover;
+    }
+
+    public function setRemoveCover(bool $removeCover): static
+    {
+        $this->removeCover = $removeCover;
+
+        return $this;
     }
 
     public function __toString(): string

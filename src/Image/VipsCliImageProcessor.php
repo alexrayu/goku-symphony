@@ -88,6 +88,14 @@ final class VipsCliImageProcessor implements ImageProcessor
         ], untrustedInput: true);
     }
 
+    public function toFit(string $source, string $target, int $width, int $height): void
+    {
+        $this->run([
+            'vips', 'thumbnail', $source, sprintf('%s[Q=%d,keep=none]', $target, self::QUALITY), (string) $width,
+            '--height', (string) $height, '--size', 'down',
+        ], untrustedInput: true);
+    }
+
     /**
      * Uploaded files are sniffed by content, not extension: a ".png" could reach the PDF, SVG or
      * ImageMagick loaders. $untrustedInput limits vips to its fuzzed loaders (JPEG, PNG, WebP, GIF, ...).

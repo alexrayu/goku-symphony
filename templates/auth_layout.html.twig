@@ -22,6 +22,6 @@
 {% endblock %}
 
 {% block body %}
-    <a class="brand" href="{{ path('home') }}">{{ include('theme/_logo.svg.twig') }}{{ site_name }}</a>
+    {{ include('theme/_brand.html.twig') }}
     <main>{% block content %}{% endblock %}</main>
 {% endblock %}

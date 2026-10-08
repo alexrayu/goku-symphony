@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
+use App\Media\PageImageUrlGenerator;
+use App\Site\SiteSettingsProvider;
 use EasyCorp\Bundle\EasyAdminBundle\Attribute\AdminDashboard;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Dashboard;
@@ -12,7 +14,6 @@ use EasyCorp\Bundle\EasyAdminBundle\Config\Option\GrayScale;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Theme;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractDashboardController;
 use EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGenerator;
-use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\Response;
 
 #[AdminDashboard(routePath: '/admin', routeName: 'admin')]
@@ -20,8 +21,8 @@ final class DashboardController extends AbstractDashboardController
 {
     public function __construct(
         private readonly AdminUrlGenerator $adminUrlGenerator,
-        #[Autowire('%env(SITE_NAME)%')]
-        private readonly string $siteName,
+        private readonly SiteSettingsProvider $settings,
+        private readonly PageImageUrlGenerator $imageUrls,
     ) {
     }
 
@@ -33,13 +34,16 @@ final class DashboardController extends AbstractDashboardController
 
     public function configureDashboard(): Dashboard
     {
-        // Same brand as the public site: its favicon, name, accent and dark scheme.
+        // Same brand as the public site (Site settings): its icon, name, accent and dark scheme.
+        $site = $this->settings->get();
+        $icon = $this->imageUrls->logo($site) ?? $this->generateUrl('favicon');
+
         return Dashboard::new()
-            // Rendered raw by EasyAdmin: the name is escaped, the logo is markup.
-            ->setTitle(sprintf('<img src="/favicon.svg" alt="" width="24" height="24" style="vertical-align: -5px; margin-right: .5rem">%s', htmlspecialchars($this->siteName)))
-            ->setFaviconPath('/favicon.svg')
+            // Rendered raw by EasyAdmin: the name is escaped, the icon URL is ours.
+            ->setTitle(sprintf('<img src="%s" alt="" height="24" style="vertical-align: -5px; margin-right: .5rem">%s', $icon, htmlspecialchars($site->getName())))
+            ->setFaviconPath($icon)
             ->setDefaultColorScheme('dark')
-            ->setTheme(Theme::new()->primaryColor('#ff6a4d')->grays(GrayScale::ZINC));
+            ->setTheme(Theme::new()->primaryColor($site->getAccent())->grays(GrayScale::ZINC));
     }
 
     // Optional fields left empty (e.g. a chapter without a title) show as blank cells, not a "Null" badge.
@@ -52,6 +56,7 @@ final class DashboardController extends AbstractDashboardController
     {
         yield MenuItem::linkTo(WorkCrudController::class, 'Works', 'fa fa-book');
         yield MenuItem::linkTo(ChapterCrudController::class, 'Chapters', 'fa fa-file-lines');
+        yield MenuItem::linkTo(SiteSettingsCrudController::class, 'Site settings', 'fa fa-palette');
         yield MenuItem::linkToUrl('View site', 'fa fa-arrow-up-right-from-square', $this->generateUrl('home'));
     }
 }

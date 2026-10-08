@@ -6,6 +6,8 @@ namespace App\Media;
 
 use App\Entity\Chapter;
 use App\Entity\Page;
+use App\Entity\SiteSettings;
+use App\Entity\Work;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Twig\Attribute\AsTwigFunction;
 
@@ -27,6 +29,29 @@ final class PageImageUrlGenerator
     public function thumbnail(Chapter $chapter): string
     {
         return $this->urlGenerator->generate('media_thumb', ['id' => $chapter->getId()]);
+    }
+
+    // The work's chosen cover, else the first chapter's.
+    #[AsTwigFunction('work_thumb_url')]
+    public function workThumbnail(Work $work, Chapter $first): string
+    {
+        return null === $work->getCoverVersion()
+            ? $this->thumbnail($first)
+            : $this->urlGenerator->generate('media_work_thumb', ['id' => $work->getId(), 'version' => $work->getCoverVersion()]);
+    }
+
+    #[AsTwigFunction('work_cover_url')]
+    public function workCover(Work $work, Chapter $first): string
+    {
+        return null === $work->getCoverVersion()
+            ? $this->cover($first)
+            : $this->urlGenerator->generate('media_work_cover', ['id' => $work->getId(), 'version' => $work->getCoverVersion()], UrlGeneratorInterface::ABSOLUTE_URL);
+    }
+
+    #[AsTwigFunction('site_logo_url')]
+    public function logo(SiteSettings $settings): ?string
+    {
+        return null === $settings->getLogoVersion() ? null : $this->urlGenerator->generate('media_logo', ['version' => $settings->getLogoVersion()]);
     }
 
     // Absolute: link-preview crawlers resolve og:image without a base URL.

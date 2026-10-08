@@ -3,7 +3,8 @@
     <head>
         <meta charset="UTF-8">
         <title>{% block title %}Welcome!{% endblock %}</title>
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+        {% set logo = site_logo_url(site) %}
+        <link rel="icon" href="{{ logo ?? path('favicon') }}" type="{{ logo ? 'image/webp' : 'image/svg+xml' }}">
         {% block stylesheets %}
         {% endblock %}
 

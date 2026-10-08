@@ -84,7 +84,7 @@ Open question to the user: trim the `LATER.md` web-installer line to what is lef
 - Possible follow-ups (not done): reader width cap on desktop, home ordering by recency (no timestamps yet).
 
 ## Launch hardening (2026-10-08, audit item 1, committed 219780d)
-- Audit report: `~/Documents/tickets/goku-symfony/audit-2026-10-08/audit.md`. Items 1-3 done; next: item 4, branding (`SITE_ACCENT`, site settings for bio/links/logo, optional work cover).
+- Audit report: `~/Documents/tickets/goku-symfony/audit-2026-10-08/audit.md`. Items 1-4 done; next: item 5, polish (first-page preload, `fetchpriority`, reader progress and keyboard nav, logout CSRF, zip entry cap).
 - Unpublish retraction: user chose a short edge TTL (media `s-maxage=3600` + Last-Modified 304) over a Cloudflare purge API. New URLs alone do not retract: the old URLs stay cached at the edge. Not yet verified behind real Nginx/Cloudflare (304 through X-Accel, Cloudflare honouring `s-maxage` on images).
 - Security headers come from the `SecurityHeaders` listener, not Nginx. Only the `frame-ancestors` CSP so far; a full CSP needs nonces for inline styles, JSON-LD and importmap.
 - Installer window closed operationally: README says to create the first user with `app:user:create` over SSH before the DNS record exists.
@@ -98,7 +98,7 @@ Open question to the user: trim the `LATER.md` web-installer line to what is lef
 - Oneshot rule: `Assert\Callback` on Chapter (second chapter on a oneshot) and Work (switching to oneshot with more than one chapter). Factories don't fill `Work::$chapters`; tests clear the EM and reload.
 - `direction` field hidden in admin; LATER.md notes to restore it with the paged/RTL reader.
 
-## Dates and summaries (2026-10-08, audit item 3, uncommitted)
+## Dates and summaries (2026-10-08, audit item 3, committed 3a26a46)
 - `Chapter.publishedAt` is set by `setPublished(true)` only when null (first publication; kept through unpublish/republish), constructor included. No setter on purpose; tests use reflection (`ChapterPublicationTest::publishedAgo`). The migration backfilled existing published chapters to the migration time.
 - Plain `new \DateTimeImmutable()` in the entity: `symfony/clock` is only transitive, and making it direct needs user approval.
 - `isNew()` = published within `Chapter::NEW_FOR` (7 days). Home cards and chapter rows show a "New" badge; HTML stays edge-cached 5 min, which is fine for a day-scale flag.
@@ -106,3 +106,12 @@ Open question to the user: trim the `LATER.md` web-installer line to what is lef
 - Summary: reader header text, meta description and ComicIssue description (series); a oneshot keeps the work description.
 - PHPStan remembers getter results across calls to setters on the same object (`assertNull`, then `setPublished`, then `assertNotNull` is flagged as impossible); use separate instances.
 - Dev demo dates are spread (Neon Tide ch. 4 two days ago, Garden three days ago), and Neon Tide ch. 4 has a summary.
+
+## Branding (2026-10-08, audit item 4, uncommitted)
+- User chose admin-editable settings over env, and an optional per-work cover upload.
+- `SiteSettings`: single row, id 1. Admin index creates it from `SITE_NAME`/`SITE_DESCRIPTION` on first visit, then redirects to edit (no new/delete/detail). `SiteSettingsProvider` caches a detached copy in cache.app; saving calls `invalidate()`. Twig global `site` (`SiteTwigGlobals`) replaced the env globals `site_name`/`site_description`. Tests run on the array cache, so settings cost one query there: the reader test counts 5.
+- Gotcha: a `.css.twig` file autoescapes with the CSS strategy, so `#ff6a4d` came out as `\23 ff6a4d`, an ident rather than a colour, and broke the theme. `getAccent()` always returns valid hex (falls back to the default), and templates print it `|raw`.
+- Uploads (logo, work cover) are transient entity properties with `Assert\Image`, processed after the flush by `CustomImages` (vips with the untrusted-loader block; temp files first, so a bad image changes nothing). Versioned URLs (`/media/site/logo-{v}.webp`, `/media/work/{id}/thumb-{v}.webp`, `cover-{v}.jpg`) are immutable. A work cover is public once any chapter of the work is published.
+- An uploaded logo replaces both the mark and the name in the header (alt = name), and becomes the favicon and the EasyAdmin icon. Without a logo, `/favicon.svg` is a Twig route in the accent colour (static file deleted).
+- `/about` shows bio and links, 404 when both are empty; `about` is a reserved slug. Links are "Label | https://..." lines, validated, so a `javascript:` URL never reaches an href.
+- Dev DB: settings row with the default name and accent, demo bio and a Bluesky link; no logo, no work covers.

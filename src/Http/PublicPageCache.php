@@ -13,7 +13,7 @@ use Symfony\Component\HttpKernel\Event\ResponseEvent;
 // whenever the session was used.
 final class PublicPageCache
 {
-    private const ROUTES = ['home', 'work_show', 'chapter_read', 'robots', 'sitemap'];
+    private const ROUTES = ['home', 'work_show', 'chapter_read', 'about', 'robots', 'sitemap', 'favicon'];
     private const SHARED_MAX_AGE = 300;
 
     #[AsEventListener]

@@ -2,8 +2,8 @@
 
 {% set not_found = status_code == 404 %}
 {% set seo = {
-    title: (not_found ? 'Page not found' : 'Something went wrong') ~ ' | ' ~ site_name,
-    description: site_description,
+    title: (not_found ? 'Page not found' : 'Something went wrong') ~ ' | ' ~ site.name,
+    description: site.tagline ?? site.name,
     noindex: true,
 } %}
 

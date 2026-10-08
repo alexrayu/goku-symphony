@@ -4,17 +4,17 @@
 {% set first = chapters|first %}
 {% set latest = chapters|last %}
 {% set seo = {
-    title: work.title ~ ' | ' ~ site_name,
-    description: work.description ?: 'Read ' ~ work.title ~ ' online on ' ~ site_name ~ '.',
+    title: work.title ~ ' | ' ~ site.name,
+    description: work.description ?: 'Read ' ~ work.title ~ ' online on ' ~ site.name ~ '.',
     canonical: canonical,
-    image: chapter_cover_url(first),
+    image: work_cover_url(work, first),
     json_ld: {
         '@context': 'https://schema.org',
         '@type': 'ComicSeries',
         name: work.title,
         description: work.description,
         url: canonical,
-        image: chapter_cover_url(first),
+        image: work_cover_url(work, first),
         hasPart: chapters|map(c => {
             '@type': 'ComicIssue',
             issueNumber: c.numberLabel,
@@ -28,7 +28,7 @@
 {% block main %}
     <main class="wrap">
         <section class="work-head">
-            <img class="cover" src="{{ chapter_thumb_url(first) }}" alt="{{ work.title }} cover" width="400" height="560">
+            <img class="cover" src="{{ work_thumb_url(work, first) }}" alt="{{ work.title }} cover" width="400" height="560">
             <div>
                 <span class="badge">Series</span>
                 <h1>{{ work.title }}</h1>

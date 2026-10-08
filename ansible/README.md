@@ -4,7 +4,7 @@ One DigitalOcean droplet (Ubuntu 24.04, 2 GB) behind Cloudflare. `provision.yml`
 
 ## First run
 
-1. Put the droplet IP in `inventory.yml`. Set `app_hostname`, `site_name` and `site_description` in `group_vars/all.yml`.
+1. Put the droplet IP in `inventory.yml`. Set `app_hostname` in `group_vars/all.yml`. `site_name` and `site_description` are only first-run defaults: after install, the name, tagline, bio, links, accent colour and logo are edited in admin under Site settings.
 2. Copy `secrets.example.yml` to `secrets.yml` (gitignored) and fill it in. Keep a copy outside the repo.
 3. Run `make provision`, then `make deploy` (or `make deploy REF=<branch>`).
 4. Create the first user before the site is reachable: until a user exists, anyone who opens `/install` can claim the site. Right after the first deploy, and before adding the Cloudflare DNS record, run `ssh -t <droplet> sudo -u goku php /srv/goku/current/bin/console app:user:create <email>`. The password is prompted for, so it stays out of shell history. Once that user exists, `/install` redirects to the login page. If the DNS record is already live, open `https://<app_hostname>/install` immediately instead.

@@ -1,17 +1,17 @@
 {% extends 'public/layout.html.twig' %}
 
 {% set seo = {
-    title: site_name,
-    description: site_description,
+    title: site.name,
+    description: site.tagline ?? site.name,
     canonical: url('home'),
-    json_ld: {'@context': 'https://schema.org', '@type': 'WebSite', name: site_name, url: url('home')},
+    json_ld: {'@context': 'https://schema.org', '@type': 'WebSite', name: site.name, url: url('home')},
 } %}
 
 {% block main %}
     <main class="wrap">
         <section class="intro">
-            <h1>{{ site_name }}</h1>
-            <p class="muted">{{ site_description }}</p>
+            <h1>{{ site.name }}</h1>
+            {% if site.tagline %}<p class="muted">{{ site.tagline }}</p>{% endif %}
         </section>
         <h2 class="section-title">Works{% if shelf is not empty %} <span>{{ shelf|length }}</span>{% endif %}</h2>
         {% if shelf is empty %}
@@ -24,7 +24,7 @@
                     <li class="card">
                         <a href="{{ path('work_show', {slug: item.work.slug}) }}">
                             {% if item.chapters|filter(c => c.new) is not empty %}<span class="badge new">New</span>{% endif %}
-                            <img class="cover" src="{{ chapter_thumb_url(item.chapters|first) }}" alt="" width="400" height="560"
+                            <img class="cover" src="{{ work_thumb_url(item.work, item.chapters|first) }}" alt="" width="400" height="560"
                                  {{ loop.index > 6 ? 'loading="lazy"' }} decoding="async">
                             <h3>{{ item.work.title }}</h3>
                             <p>

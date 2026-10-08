@@ -1,0 +1,28 @@
+{% extends 'public/layout.html.twig' %}
+
+{% set seo = {
+    title: 'About | ' ~ site.name,
+    description: site.bio ?? site.tagline ?? site.name,
+    canonical: url('about'),
+    type: 'profile',
+    json_ld: {
+        '@context': 'https://schema.org',
+        '@type': 'ProfilePage',
+        url: url('about'),
+        mainEntity: {'@type': 'Person', name: site.name, description: site.bio, sameAs: site.linkList|map(l => l.url)},
+    },
+} %}
+
+{% block main %}
+    <main class="wrap about">
+        <h1>About</h1>
+        {% if site.bio %}<div class="bio">{{ site.bio|nl2br }}</div>{% endif %}
+        {% if site.linkList is not empty %}
+            <ul class="links">
+                {% for link in site.linkList %}
+                    <li><a class="button" href="{{ link.url }}" rel="me noopener">{{ link.label }}</a></li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </main>
+{% endblock %}

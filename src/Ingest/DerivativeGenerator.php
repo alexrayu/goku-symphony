@@ -22,12 +22,12 @@ final class DerivativeGenerator
     // Without it lossy WebP seams gradients and screentones at tile edges. 4 px still left traces in
     // the browser; 8 px makes 144 px cells, aligned to WebP's 16 px blocks, for ~25% more bytes.
     public const TILE_GUTTER = 8;
-    // Open Graph's recommended link-preview size.
-    private const COVER_WIDTH = 1200;
-    private const COVER_HEIGHT = 630;
+    // Open Graph's recommended link-preview size. Shared with chosen work covers (CustomImages).
+    public const COVER_WIDTH = 1200;
+    public const COVER_HEIGHT = 630;
     // 5:7, close to a printed manga volume; 2x the listing card width.
-    private const THUMB_WIDTH = 400;
-    private const THUMB_HEIGHT = 560;
+    public const THUMB_WIDTH = 400;
+    public const THUMB_HEIGHT = 560;
 
     public function __construct(
         private readonly EntityManagerInterface $em,

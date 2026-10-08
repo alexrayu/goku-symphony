@@ -16,7 +16,7 @@
         <link rel="canonical" href="{{ seo.canonical }}">
         <meta property="og:url" content="{{ seo.canonical }}">
     {% endif %}
-    <meta property="og:site_name" content="{{ site_name }}">
+    <meta property="og:site.name" content="{{ site.name }}">
     <meta property="og:type" content="{{ seo.type ?? 'website' }}">
     <meta property="og:title" content="{{ seo.title }}">
     <meta property="og:description" content="{{ description }}">
@@ -43,7 +43,9 @@
         .crumb { display: flex; align-items: center; gap: .75rem; min-width: 0; color: var(--muted); }
         .crumb::before { content: ""; width: 1px; height: 1.1rem; background: var(--line); }
         .crumb a { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .crumb a:hover, .site-footer a:hover { color: var(--text); }
+        .crumb a:hover, .site-footer a:hover, .site-nav a:hover { color: var(--text); }
+        .site-nav { margin-left: auto; color: var(--muted); }
+        .site-footer nav { display: flex; gap: 1.25rem; }
         main { flex: 1; }
         .site-footer { margin-top: 4rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .875rem; }
         .site-footer .wrap { display: flex; justify-content: space-between; gap: 1rem; padding-block: 1.5rem; }
@@ -111,6 +113,12 @@
         .reader-end h2 { margin: 0 0 .25rem; font-size: 1.15rem; }
         .reader-end p { margin: 0 0 1.25rem; }
 
+        /* About */
+        .about { max-width: 44rem; padding-block: 3rem; }
+        .about h1 { margin: 0 0 1.25rem; font-size: clamp(1.75rem, 4vw, 2.5rem); }
+        .bio { font-size: 1.1rem; line-height: 1.7; }
+        .links { display: flex; flex-wrap: wrap; gap: .6rem; margin: 2rem 0 0; padding: 0; list-style: none; }
+
         /* Errors */
         .error { padding-block: 5rem; text-align: center; }
         .error h1 { margin: 0; color: var(--accent); font-size: 4rem; }
@@ -121,15 +129,19 @@
 {% block body %}
     <header class="site-header">
         <div class="wrap">
-            <a class="brand" href="{{ path('home') }}">{{ include('theme/_logo.svg.twig') }}{{ site_name }}</a>
+            {{ include('theme/_brand.html.twig') }}
             {% block crumbs %}{% endblock %}
+            {% if site.hasAbout %}<nav class="site-nav"><a href="{{ path('about') }}">About</a></nav>{% endif %}
         </div>
     </header>
     {% block main %}{% endblock %}
     <footer class="site-footer">
         <div class="wrap">
-            <span>&copy; {{ 'now'|date('Y') }} {{ site_name }}</span>
-            <a href="{{ path('home') }}">All works</a>
+            <span>&copy; {{ 'now'|date('Y') }} {{ site.name }}</span>
+            <nav>
+                <a href="{{ path('home') }}">All works</a>
+                {% if site.hasAbout %}<a href="{{ path('about') }}">About</a>{% endif %}
+            </nav>
         </div>
     </footer>
 {% endblock %}

@@ -6,6 +6,7 @@ namespace App\Ingest;
 
 use App\Entity\Chapter;
 use App\Entity\Page;
+use App\Entity\Work;
 
 // Storage layout in one place. Keys, never URLs: URLs come from the URL generator (phase 5).
 final class StorageKeys
@@ -53,6 +54,22 @@ final class StorageKeys
             'directories' => [self::originalsDirectory($chapter), self::derivativesDirectory($chapter)],
             'files' => [self::cover($chapter), self::thumbnail($chapter)],
         ];
+    }
+
+    // Chosen work cover, replacing the chapter-derived pair. Overwritten in place; URLs carry the version.
+    public static function workCover(Work $work): string
+    {
+        return sprintf('covers/works/%d.jpg', $work->getId());
+    }
+
+    public static function workThumbnail(Work $work): string
+    {
+        return sprintf('thumbs/works/%d.webp', $work->getId());
+    }
+
+    public static function logo(): string
+    {
+        return 'site/logo.webp';
     }
 
     private static function originalsDirectory(Chapter $chapter): string

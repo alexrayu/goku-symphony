@@ -102,6 +102,7 @@ final class SeoTest extends WebTestCase
         $validator = static::getContainer()->get(ValidatorInterface::class);
 
         self::assertCount(1, $validator->validate(new Work('Admin', 'admin')));
+        self::assertCount(1, $validator->validate(new Work('About', 'about')));
         self::assertCount(1, $validator->validate(new Work('Bad', 'Bad Slug')));
         self::assertCount(0, $validator->validate(new Work('Fine', 'admin-diaries')));
     }

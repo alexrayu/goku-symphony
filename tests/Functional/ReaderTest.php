@@ -73,7 +73,7 @@ final class ReaderTest extends WebTestCase
         self::assertResponseStatusCodeSame(404);
     }
 
-    public function testReaderShowsReadyPagesInOrderWithReservedSizeInFourQueries(): void
+    public function testReaderShowsReadyPagesInOrderWithReservedSizeInFiveQueries(): void
     {
         $work = WorkFactory::createOne(['slug' => 'saga', 'type' => WorkType::Series]);
         $chapter = ChapterFactory::createOne(['work' => $work, 'number' => '1.0', 'published' => true]);
@@ -99,13 +99,13 @@ final class ReaderTest extends WebTestCase
         self::assertStringContainsString('aspect-ratio: 800 / 3000', (string) $pages->eq(0)->attr('style'));
         self::assertStringStartsWith('/media/page/', (string) $pages->eq(0)->attr('data-src'));
 
-        // Installed check + work by slug + chapter list (previous/next) + chapter with pages (fetch join).
-        // An N+1 would grow with pages.
+        // Installed check + site settings (both cached outside tests) + work by slug + chapter list
+        // (previous/next) + chapter with pages (fetch join). An N+1 would grow with pages.
         $profile = $this->client->getProfile();
         self::assertInstanceOf(Profile::class, $profile);
         $db = $profile->getCollector('db');
         self::assertInstanceOf(DoctrineDataCollector::class, $db);
-        self::assertSame(4, $db->getQueryCount());
+        self::assertSame(5, $db->getQueryCount());
     }
 
     public function testReaderLinksPreviousAndNextPublishedChapters(): void

@@ -6,10 +6,10 @@
 {% set work_path = path('work_show', {slug: work.slug}) %}
 {% set canonical = oneshot ? work_url : url('chapter_read', {slug: work.slug, number: chapter.numberLabel}) %}
 {% set seo = {
-    title: (oneshot ? work.title : work.title ~ ' ' ~ chapter_name) ~ ' | ' ~ site_name,
-    description: (oneshot ? work.description : chapter.summary) ?: 'Read ' ~ work.title ~ (oneshot ? '' : ' ' ~ chapter_name) ~ ' online on ' ~ site_name ~ '.',
+    title: (oneshot ? work.title : work.title ~ ' ' ~ chapter_name) ~ ' | ' ~ site.name,
+    description: (oneshot ? work.description : chapter.summary) ?: 'Read ' ~ work.title ~ (oneshot ? '' : ' ' ~ chapter_name) ~ ' online on ' ~ site.name ~ '.',
     canonical: canonical,
-    image: chapter_cover_url(chapter),
+    image: oneshot ? work_cover_url(work, chapter) : chapter_cover_url(chapter),
     type: 'article',
     noindex: not chapter.published,
     json_ld: oneshot ? {
@@ -18,7 +18,7 @@
         name: work.title,
         description: work.description,
         url: canonical,
-        image: chapter_cover_url(chapter),
+        image: work_cover_url(work, chapter),
         datePublished: chapter.publishedAt ? chapter.publishedAt|date('c') : null,
     } : {
         '@context': 'https://schema.org',
@@ -36,7 +36,7 @@
             {
                 '@type': 'BreadcrumbList',
                 itemListElement: [
-                    {'@type': 'ListItem', position: 1, name: site_name, item: url('home')},
+                    {'@type': 'ListItem', position: 1, name: site.name, item: url('home')},
                     {'@type': 'ListItem', position: 2, name: work.title, item: work_url},
                     {'@type': 'ListItem', position: 3, name: chapter_name, item: canonical},
                 ],

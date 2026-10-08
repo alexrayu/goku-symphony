@@ -6,6 +6,7 @@
 {% endmacro %}
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 {{ _self.url(url('home'), (groups|first).updatedAt ?? null) }}
+{% if site.hasAbout %}{{ _self.url(url('about'), null) }}{% endif %}
 {% for group in groups %}
 {{ _self.url(url('work_show', {slug: group.work.slug}), group.updatedAt) }}
     {% if group.work.type.value == 'series' %}

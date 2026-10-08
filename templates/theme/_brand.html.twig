@@ -1,0 +1,5 @@
+{# Header brand: the artist's logo alone (it carries the name), else the default mark and the site name. #}
+<a class="brand" href="{{ path('home') }}">
+    {%- set logo = site_logo_url(site) -%}
+    {%- if logo %}<img class="logo" src="{{ logo }}" alt="{{ site.name }}">{% else %}{{ include('theme/_logo.svg.twig') }}{{ site.name }}{% endif -%}
+</a>

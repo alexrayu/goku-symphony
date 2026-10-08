@@ -24,4 +24,10 @@ interface ImageProcessor
      * previews and listing thumbnails. The format follows $target's extension.
      */
     public function toCover(string $source, string $target, int $width, int $height): void;
+
+    /**
+     * Writes $source shrunk to fit within $width x $height, uncropped, aspect and transparency kept
+     * (never upscaled). The format follows $target's extension.
+     */
+    public function toFit(string $source, string $target, int $width, int $height): void;
 }
