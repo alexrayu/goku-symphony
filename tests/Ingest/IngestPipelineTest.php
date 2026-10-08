@@ -120,6 +120,27 @@ final class IngestPipelineTest extends KernelTestCase
         self::assertCount(0, $this->asyncTransport()->getSent());
     }
 
+    public function testArchiveOverThePageCapIsRejectedBeforeAnythingIsWritten(): void
+    {
+        $chapter = ChapterFactory::createOne();
+        // Content is never read: the cap applies to the central directory first.
+        $entries = [];
+        for ($i = 1; $i <= 1001; ++$i) {
+            $entries["page_$i.png"] = null;
+        }
+        $key = $this->storeArchive($chapter, $entries);
+
+        try {
+            static::getContainer()->get(ArchiveIngestor::class)->ingest(new IngestArchive((int) $chapter->getId(), $key));
+            self::fail('Expected an unrecoverable failure.');
+        } catch (UnrecoverableMessageHandlingException $e) {
+            self::assertStringContainsString('at most 1000', $e->getMessage());
+        }
+
+        self::assertSame(0, PageFactory::count(['chapter' => $chapter]));
+        self::assertFalse(static::getContainer()->get('default.storage')->directoryExists(sprintf('originals/%d', $chapter->getId())));
+    }
+
     /**
      * @param array<string, array{int, int}|null> $entries name => image size, or null for a junk text entry
      */

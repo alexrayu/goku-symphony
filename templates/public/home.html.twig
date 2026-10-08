@@ -25,7 +25,7 @@
                         <a href="{{ path('work_show', {slug: item.work.slug}) }}">
                             {% if item.chapters|filter(c => c.new) is not empty %}<span class="badge new">New</span>{% endif %}
                             <img class="cover" src="{{ work_thumb_url(item.work, item.chapters|first) }}" alt="" width="400" height="560"
-                                 {{ loop.index > 6 ? 'loading="lazy"' }} decoding="async">
+                                 {{ loop.index > 6 ? 'loading="lazy"' }} {{ loop.first ? 'fetchpriority="high"' }} decoding="async">
                             <h3>{{ item.work.title }}</h3>
                             <p>
                                 {% if oneshot %}

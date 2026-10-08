@@ -84,7 +84,7 @@ Open question to the user: trim the `LATER.md` web-installer line to what is lef
 - Possible follow-ups (not done): reader width cap on desktop, home ordering by recency (no timestamps yet).
 
 ## Launch hardening (2026-10-08, audit item 1, committed 219780d)
-- Audit report: `~/Documents/tickets/goku-symfony/audit-2026-10-08/audit.md`. Items 1-4 done; next: item 5, polish (first-page preload, `fetchpriority`, reader progress and keyboard nav, logout CSRF, zip entry cap).
+- Audit report: `~/Documents/tickets/goku-symfony/audit-2026-10-08/audit.md`. Items 1-5 done, plus a full CSP. Open: verify behind real Nginx (phase-6 container or droplet; deploys clone the repo, so commit first): media 304 through X-Accel, CSP intact through Nginx, reader LCP preload. Cloudflare `s-maxage` only on the droplet.
 - Unpublish retraction: user chose a short edge TTL (media `s-maxage=3600` + Last-Modified 304) over a Cloudflare purge API. New URLs alone do not retract: the old URLs stay cached at the edge. Not yet verified behind real Nginx/Cloudflare (304 through X-Accel, Cloudflare honouring `s-maxage` on images).
 - Security headers come from the `SecurityHeaders` listener, not Nginx. Only the `frame-ancestors` CSP so far; a full CSP needs nonces for inline styles, JSON-LD and importmap.
 - Installer window closed operationally: README says to create the first user with `app:user:create` over SSH before the DNS record exists.
@@ -107,7 +107,7 @@ Open question to the user: trim the `LATER.md` web-installer line to what is lef
 - PHPStan remembers getter results across calls to setters on the same object (`assertNull`, then `setPublished`, then `assertNotNull` is flagged as impossible); use separate instances.
 - Dev demo dates are spread (Neon Tide ch. 4 two days ago, Garden three days ago), and Neon Tide ch. 4 has a summary.
 
-## Branding (2026-10-08, audit item 4, uncommitted)
+## Branding (2026-10-08, audit item 4, committed e4bf472)
 - User chose admin-editable settings over env, and an optional per-work cover upload.
 - `SiteSettings`: single row, id 1. Admin index creates it from `SITE_NAME`/`SITE_DESCRIPTION` on first visit, then redirects to edit (no new/delete/detail). `SiteSettingsProvider` caches a detached copy in cache.app; saving calls `invalidate()`. Twig global `site` (`SiteTwigGlobals`) replaced the env globals `site_name`/`site_description`. Tests run on the array cache, so settings cost one query there: the reader test counts 5.
 - Gotcha: a `.css.twig` file autoescapes with the CSS strategy, so `#ff6a4d` came out as `\23 ff6a4d`, an ident rather than a colour, and broke the theme. `getAccent()` always returns valid hex (falls back to the default), and templates print it `|raw`.
@@ -115,3 +115,16 @@ Open question to the user: trim the `LATER.md` web-installer line to what is lef
 - An uploaded logo replaces both the mark and the name in the header (alt = name), and becomes the favicon and the EasyAdmin icon. Without a logo, `/favicon.svg` is a Twig route in the accent colour (static file deleted).
 - `/about` shows bio and links, 404 when both are empty; `about` is a reserved slug. Links are "Label | https://..." lines, validated, so a `javascript:` URL never reaches an href.
 - Dev DB: settings row with the default name and accent, demo bio and a Bluesky link; no logo, no work covers.
+
+## Polish (2026-10-08, audit item 5, uncommitted)
+- Reader: first page `<link rel=preload as=fetch crossorigin=anonymous>` (matches the controller's same-origin `fetch()`; verified one request, no console warning). Lighthouse prod-mode median LCP stayed 2.4 s (5 runs, was 2.3 s): `php -S` serves one request at a time, so the parallel fetch cannot show. Re-measure behind Nginx before judging; remove if it still shows nothing.
+- Progress bar is CSS-only (`animation-timeline: scroll(root)` under `@supports`); browsers without scroll timelines (Firefox) show nothing. Arrow Left/Right go to the previous/next chapter (reader controller values; ignored with modifiers or in form fields); buttons carry `aria-keyshortcuts`.
+- Logout: `enable_csrf: true`; EasyAdmin's menu link gets the token from `LogoutUrlGenerator`. A bare `/logout` now answers 403 (themed error page).
+- Archive caps: 1000 images, 2 GB total uncompressed, checked from the central directory before any write. The page cap is tested; the 2 GB cap is not (building a 2 GB test archive is too slow).
+- `fetchpriority="high"` on the first home cover and the work page cover.
+
+## Full CSP (2026-10-08, uncommitted, same tree as polish)
+- User chose hashes over nonces: nonces make every response unique, which breaks ETag/304 and would let Cloudflare serve one nonce to everyone. `SecurityHeaders` hashes each inline `<script>`/`<style>` of the final HTML (skips `src=` scripts and JSON/JSON-LD data blocks) into `script-src`/`style-src`; `style-src-attr 'unsafe-inline'` covers the page-size and EasyAdmin style attributes; `img-src 'self' data:`.
+- Gotcha: browsers merge a 304's headers into the cached page, so a hash-less CSP on a 304 would break it. The listener runs at priority 16, before PublicPageCache (0) empties the body; the test asserts the 304 policy equals the 200's.
+- `Content-Type` is not set yet during kernel.response (`prepare()` runs at send), so a missing type is treated as HTML; non-HTML bodies simply have no blocks.
+- Verified in the browser: no violations on public pages, the reader (canvas, fetch), login, and every EasyAdmin page incl. dropdowns and the AJAX published switch. EasyAdmin has no inline scripts except its unused welcome page.

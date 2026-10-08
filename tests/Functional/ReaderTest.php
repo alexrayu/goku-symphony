@@ -98,6 +98,9 @@ final class ReaderTest extends WebTestCase
         ));
         self::assertStringContainsString('aspect-ratio: 800 / 3000', (string) $pages->eq(0)->attr('style'));
         self::assertStringStartsWith('/media/page/', (string) $pages->eq(0)->attr('data-src'));
+        // The first page is fetched alongside the JS, and the progress bar is in place.
+        self::assertSame($pages->eq(0)->attr('data-src'), $crawler->filter('link[rel=preload][as=fetch]')->attr('href'));
+        self::assertCount(1, $crawler->filter('.reader-progress'));
 
         // Installed check + site settings (both cached outside tests) + work by slug + chapter list
         // (previous/next) + chapter with pages (fetch join). An N+1 would grow with pages.
@@ -123,6 +126,9 @@ final class ReaderTest extends WebTestCase
 
         $crawler = $this->client->request('GET', '/saga/chapter-1');
         self::assertSame(['All chapters', 'Next'], $crawler->filter('.reader-head .chapter-nav a')->each(static fn ($a) => $a->text()));
+        // Arrow-key navigation gets the same targets; there is no previous chapter here.
+        self::assertSame('/saga/chapter-2', $crawler->filter('.pages')->attr('data-reader-next-value'));
+        self::assertNull($crawler->filter('.pages')->attr('data-reader-previous-value'));
     }
 
     public function testLoggedInUsersPreviewDraftsPrivately(): void

@@ -28,7 +28,7 @@
 {% block main %}
     <main class="wrap">
         <section class="work-head">
-            <img class="cover" src="{{ work_thumb_url(work, first) }}" alt="{{ work.title }} cover" width="400" height="560">
+            <img class="cover" fetchpriority="high" src="{{ work_thumb_url(work, first) }}" alt="{{ work.title }} cover" width="400" height="560">
             <div>
                 <span class="badge">Series</span>
                 <h1>{{ work.title }}</h1>

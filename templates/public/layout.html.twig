@@ -101,6 +101,12 @@
         .reader-head .summary { max-width: 40rem; margin: .75rem auto 0; }
         .chapter-nav { display: flex; flex-wrap: wrap; justify-content: center; gap: .6rem; }
         .reader-head .chapter-nav { margin-top: 1rem; }
+        /* Reading progress: a scroll-driven bar, no JS. Browsers without scroll timelines show nothing. */
+        .reader-progress { display: none; }
+        @supports (animation-timeline: scroll()) {
+            .reader-progress { display: block; position: fixed; inset: 0 0 auto; z-index: 10; height: 3px; background: var(--accent); transform-origin: left; animation: progress linear both; animation-timeline: scroll(root); }
+            @keyframes progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+        }
         .pages { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
         .page { margin: 0 auto; background: var(--surface); }
         .page:empty { background: linear-gradient(100deg, var(--surface) 40%, var(--raised) 50%, var(--surface) 60%) 0 0 / 300% 100%; animation: shimmer 1.6s linear infinite; }

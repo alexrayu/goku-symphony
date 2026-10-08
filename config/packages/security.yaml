@@ -21,6 +21,8 @@ security:
                 enable_csrf: true
             logout:
                 path: app_logout
+                # A third-party page cannot log the artist out; the generated logout URL carries the token.
+                enable_csrf: true
             login_throttling:
                 max_attempts: 5
 

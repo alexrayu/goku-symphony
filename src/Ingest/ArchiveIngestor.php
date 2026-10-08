@@ -19,6 +19,9 @@ final class ArchiveIngestor
 {
     // Uncompressed size cap per image: guards against zip bombs filling the disk.
     private const ENTRY_MAX_BYTES = 64 * 1024 * 1024;
+    // Whole-archive caps: the per-entry cap alone lets many entries fill the disk.
+    private const MAX_PAGES = 1000;
+    private const TOTAL_MAX_BYTES = 2 * 1024 * 1024 * 1024;
 
     public function __construct(
         private readonly EntityManagerInterface $em,
@@ -100,6 +103,17 @@ final class ArchiveIngestor
             $entries = $this->pageOrder->sort($names);
             if ([] === $entries) {
                 throw new \InvalidArgumentException('The archive contains no images.');
+            }
+            if (\count($entries) > self::MAX_PAGES) {
+                throw new \InvalidArgumentException(sprintf('The archive has %d images; a chapter takes at most %d.', \count($entries), self::MAX_PAGES));
+            }
+            // Sizes from the central directory, before anything is written.
+            $total = 0;
+            foreach ($entries as $name) {
+                $total += $zip->statName($name)['size'] ?? 0;
+            }
+            if ($total > self::TOTAL_MAX_BYTES) {
+                throw new \InvalidArgumentException(sprintf('The images add up to more than %d GB uncompressed.', self::TOTAL_MAX_BYTES >> 30));
             }
 
             $position = 0;

@@ -45,11 +45,16 @@
     },
 } %}
 
-{% block javascripts %}{{ importmap('app') }}{% endblock %}
+{% block javascripts %}
+    {# The first page is the LCP: fetch it alongside the JS, not after it. Matches the controller's fetch() (same-origin credentials). #}
+    {% if pages is not empty %}<link rel="preload" as="fetch" href="{{ page_image_url(pages|first) }}" crossorigin="anonymous">{% endif %}
+    {{ importmap('app') }}
+{% endblock %}
 
-{% macro chapter_link(work, chapter, label, class = '') %}
+{% macro chapter_link(work, chapter, label, key, class = '') %}
     {% if chapter %}
-        <a class="button {{ class }}" href="{{ path('chapter_read', {slug: work.slug, number: chapter.numberLabel}) }}">{{ label }}</a>
+        <a class="button {{ class }}" href="{{ path('chapter_read', {slug: work.slug, number: chapter.numberLabel}) }}"
+           aria-keyshortcuts="{{ key }}" title="{{ key == 'ArrowLeft' ? 'Left' : 'Right' }} arrow key">{{ label }}</a>
     {% endif %}
 {% endmacro %}
 
@@ -71,15 +76,18 @@
                 {% if chapter.title %}<p class="muted">{{ chapter.title }}</p>{% endif %}
                 {% if chapter.summary %}<p class="summary">{{ chapter.summary }}</p>{% endif %}
                 <nav class="chapter-nav" aria-label="Chapters">
-                    {{ _self.chapter_link(work, previous, 'Previous') }}
+                    {{ _self.chapter_link(work, previous, 'Previous', 'ArrowLeft') }}
                     <a class="button" href="{{ work_path }}">All chapters</a>
-                    {{ _self.chapter_link(work, next, 'Next') }}
+                    {{ _self.chapter_link(work, next, 'Next', 'ArrowRight') }}
                 </nav>
             {% endif %}
         </header>
         {# Pages are scrambled tiles, rebuilt on canvas by the reader controller; the box reserves the space. #}
+        <div class="reader-progress" aria-hidden="true"></div>
         <div class="pages" data-controller="reader" data-reader-tile-value="{{ constant('App\\Ingest\\DerivativeGenerator::TILE_SIZE') }}"
-             data-reader-gutter-value="{{ constant('App\\Ingest\\DerivativeGenerator::TILE_GUTTER') }}">
+             data-reader-gutter-value="{{ constant('App\\Ingest\\DerivativeGenerator::TILE_GUTTER') }}"
+             {% if previous %}data-reader-previous-value="{{ path('chapter_read', {slug: work.slug, number: previous.numberLabel}) }}"{% endif %}
+             {% if next %}data-reader-next-value="{{ path('chapter_read', {slug: work.slug, number: next.numberLabel}) }}"{% endif %}>
             {% for page in pages %}
                 <div class="page" data-reader-target="page" role="img" aria-label="Page {{ loop.index }}"
                      style="aspect-ratio: {{ page.width }} / {{ page.height }}; max-width: {{ page.width }}px"
@@ -99,9 +107,9 @@
                 <h2>End of chapter {{ chapter.numberLabel }}</h2>
                 <p class="muted">{{ next ? 'Up next: Chapter ' ~ next.numberLabel ~ (next.title ? ': ' ~ next.title) : 'You are caught up.' }}</p>
                 <div class="chapter-nav">
-                    {{ _self.chapter_link(work, previous, 'Previous') }}
+                    {{ _self.chapter_link(work, previous, 'Previous', 'ArrowLeft') }}
                     <a class="button{{ next ? '' : ' primary' }}" href="{{ work_path }}">All chapters</a>
-                    {{ _self.chapter_link(work, next, 'Next chapter', 'primary') }}
+                    {{ _self.chapter_link(work, next, 'Next chapter', 'ArrowRight', 'primary') }}
                 </div>
             {% endif %}
         </section>

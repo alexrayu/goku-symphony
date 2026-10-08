@@ -10,7 +10,7 @@ const SEGMENT_HEIGHT = 4096;
 // inconvenient, not impossible: the tile order is public.
 export default class extends Controller {
     static targets = ['page'];
-    static values = { tile: Number, gutter: Number };
+    static values = { tile: Number, gutter: Number, previous: String, next: String };
 
     connect() {
         this.pending = new Map();
@@ -23,6 +23,7 @@ export default class extends Controller {
         for (const type of ['contextmenu', 'dragstart']) {
             this.element.addEventListener(type, this.block);
         }
+        window.addEventListener('keydown', this.navigate);
     }
 
     disconnect() {
@@ -31,9 +32,22 @@ export default class extends Controller {
         for (const type of ['contextmenu', 'dragstart']) {
             this.element.removeEventListener(type, this.block);
         }
+        window.removeEventListener('keydown', this.navigate);
     }
 
     block = (event) => event.preventDefault();
+
+    // Left/right arrows go to the previous/next chapter; up/down and space keep scrolling the pages.
+    navigate = (event) => {
+        if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey
+            || event.target.closest('input, textarea, select, [contenteditable]')) {
+            return;
+        }
+        const url = { ArrowLeft: this.previousValue, ArrowRight: this.nextValue }[event.key];
+        if (url) {
+            window.location.assign(url);
+        }
+    };
 
     async load(page) {
         if (page.querySelector('canvas') || this.pending.has(page)) {
