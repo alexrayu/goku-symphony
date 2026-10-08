@@ -16,6 +16,9 @@ RestartSec=5
 TimeoutStopSec=300
 # Bounds PHP and its vips child processes together.
 MemoryMax=768M
+# libvips starts a thread per visible CPU, and the scramble's mapim holds ~115 MB per thread on a
+# tall strip: one thread keeps a job near 170 MB on any host size.
+Environment=VIPS_CONCURRENCY=1
 
 [Install]
 WantedBy=multi-user.target
