@@ -1,25 +1,25 @@
-{# Work detail: its chapters, each linking to its own pages, edit form and upload. #}
+{# Work detail: its chapters, each linking to its own pages, edit form and upload. Phones keep the essentials. #}
 {% set rows = field.customOptions.get('rows') %}
+<h2 class="h5">Chapters</h2>
 {% if rows is empty %}
     <span class="text-muted">No chapters yet.</span>
 {% else %}
     {% set crud = 'App\\Controller\\Admin\\ChapterCrudController' %}
     {# Zero width keeps the table from widening EasyAdmin's field grid on phones; it scrolls instead. #}
-    <div class="table-responsive" style="width: 0; min-width: 100%"><table class="table table-sm">
-        <thead><tr><th>Number</th><th>Title</th><th>Published</th><th>First published</th><th>Pages</th><th></th></tr></thead>
+    <div class="table-responsive" style="width: 0; min-width: 100%"><table class="table align-middle">
+        <thead><tr><th>Chapter</th><th>Published</th><th class="d-none d-md-table-cell">First published</th><th class="d-none d-md-table-cell">Pages</th><th></th></tr></thead>
         <tbody>
         {% for row in rows %}
             {% set chapter = row.chapter %}
             <tr>
-                <td><a href="{{ ea_url().setController(crud).setAction('detail').setEntityId(chapter.id) }}">{{ chapter.numberLabel }}</a></td>
-                <td>{{ chapter.title }}</td>
+                <td><a class="d-inline-block py-1" href="{{ ea_url().setController(crud).setAction('detail').setEntityId(chapter.id) }}">{{ chapter.numberLabel }}{{ chapter.title ? ' · ' ~ chapter.title }}</a></td>
                 <td>{{ chapter.published ? 'Yes' : 'No' }}</td>
-                <td>{{ chapter.publishedAt ? chapter.publishedAt|date('Y-m-d H:i') }}</td>
-                <td>{{ row.pageCount }}</td>
+                <td class="d-none d-md-table-cell">{{ chapter.publishedAt ? chapter.publishedAt|date('Y-m-d H:i') }}</td>
+                <td class="d-none d-md-table-cell">{{ row.pageCount }}</td>
                 <td class="text-end text-nowrap">
-                    <a href="{{ ea_url().setController(crud).setAction('edit').setEntityId(chapter.id) }}">Edit</a>
-                    &middot;
-                    <a href="{{ ea_url().setController(crud).setAction('uploadPages').setEntityId(chapter.id) }}">Upload pages</a>
+                    <a class="d-inline-block py-1 px-2" href="{{ ea_url().setController(crud).setAction('edit').setEntityId(chapter.id) }}">Edit</a>
+                    <span class="d-none d-md-inline">&middot;
+                        <a href="{{ ea_url().setController(crud).setAction('uploadPages').setEntityId(chapter.id) }}">Upload pages</a></span>
                 </td>
             </tr>
         {% endfor %}

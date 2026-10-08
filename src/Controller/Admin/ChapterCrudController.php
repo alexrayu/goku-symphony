@@ -49,6 +49,7 @@ final class ChapterCrudController extends AbstractCrudController
         return $crud
             ->setEntityLabelInSingular('Chapter')
             ->setEntityLabelInPlural('Chapters')
+            ->setPageTitle(Crud::PAGE_DETAIL, static fn (Chapter $chapter): string => (string) $chapter)
             ->setDefaultSort(['work' => 'ASC', 'number' => 'ASC']);
     }
 

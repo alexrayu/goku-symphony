@@ -173,7 +173,7 @@ class Chapter
 
     public function __toString(): string
     {
-        return sprintf('%s #%s', $this->work, $this->number);
+        return sprintf('%s #%s', $this->work, $this->getNumberLabel());
     }
 
     // A oneshot is read from its single chapter; a second one would never be shown.

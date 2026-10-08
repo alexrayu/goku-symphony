@@ -32,12 +32,11 @@ final class AdminWorkTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Neon Tide');
-        $rows = $crawler->filter('table.table-sm tbody tr')->each(static fn ($row) => [
+        $rows = $crawler->filter('.table-responsive tbody tr')->each(static fn ($row) => [
             trim($row->filter('td')->eq(0)->text()),
-            trim($row->filter('td')->eq(1)->text()),
-            trim($row->filter('td')->eq(4)->text()),
+            trim($row->filter('td')->eq(3)->text()),
         ]);
-        self::assertSame([['1', 'Low Water', '2'], ['2.5', 'Extra', '0']], $rows);
+        self::assertSame([['1 · Low Water', '2'], ['2.5 · Extra', '0']], $rows);
     }
 
     public function testChapterAddedFromWorkPageIsNumberedNextAndReturnsToTheWork(): void

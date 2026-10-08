@@ -82,7 +82,7 @@ final class WorkCrudController extends AbstractCrudController
             yield BooleanField::new('removeCover', 'Remove the chosen cover')->renderAsSwitch(false)->onlyOnForms();
         }
         if (Crud::PAGE_DETAIL === $pageName && null !== $work = $this->getContext()?->getEntity()->getInstance()) {
-            yield Field::new('chapters')->setTemplatePath('admin/work/chapters.html.twig')
+            yield Field::new('chapters')->setLabel(false)->setTemplatePath('admin/work/chapters.html.twig')
                 ->setCustomOption('rows', $this->chapters->findWithPageCounts($work));
         }
     }
