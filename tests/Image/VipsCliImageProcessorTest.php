@@ -6,6 +6,7 @@ namespace App\Tests\Image;
 
 use App\Image\VipsCliImageProcessor;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Process\Process;
 
@@ -74,6 +75,17 @@ final class VipsCliImageProcessorTest extends TestCase
                 $this->vips(['vipsheader', '-f', 'vips-loader', $cover]),
             ]);
         }
+    }
+
+    public function testUploadedFilesCannotReachUntrustedLoaders(): void
+    {
+        // SVG behind an image extension: vips sniffs content, so only the loader block stops it.
+        $disguised = $this->dir.'/page.png';
+        file_put_contents($disguised, '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64"/></svg>');
+        $this->vips(['vips', 'copy', $disguised, $this->dir.'/control.v']);
+
+        $this->expectException(ProcessFailedException::class);
+        (new VipsCliImageProcessor())->toCover($disguised, $this->dir.'/cover.jpg', 32, 32);
     }
 
     // Distinct, well-separated greys, so lossy WebP cannot blur one tile's value into another's.

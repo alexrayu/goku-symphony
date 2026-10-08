@@ -19,7 +19,7 @@ Branch memories live in `.claude/memories/<branch>.md` (committed, public repo),
 
 ## Working agreement: build mode now, teaching mode later
 
-- Since 2026-10-06 (from phase 6): build without teaching stops. No query-count predictions, no "yours to write" pieces, no per-step proposals. Still ask on genuine blockers and dependency additions; still never commit (list files and messages per concern when a phase is done).
+- Since 2026-10-06 (from phase 6): build without teaching stops. No query-count predictions, no "yours to write" pieces, no per-step proposals. Still ask on genuine blockers and dependency additions; still never commit. At the end of a task, list the changed files and propose one commit message for all of them (user rule 2026-10-08: never suggest several commits).
 - When the user asks to be taught, apply the teaching rules below to the finished code.
 
 ### Teaching mode (paused)
@@ -29,7 +29,7 @@ Branch memories live in `.claude/memories/<branch>.md` (committed, public repo),
 - Query-count discipline: for any page or repository method loading related data, ask the user to predict the query count before showing the profiler. Fix N+1s deliberately and explain.
 - Note where Drupal would do it differently.
 - Per phase, mark one or two small pieces as "yours to write" (repository method, Stimulus controller, test) and review them instead of writing them.
-- The user commits, never Claude. At each logical boundary stop, list changed files, propose a message. Small commits, one concern each.
+- The user commits, never Claude. At each logical boundary stop, list changed files, propose one message for the whole change.
 - Stop at each phase checkpoint.
 
 ## Domain rules

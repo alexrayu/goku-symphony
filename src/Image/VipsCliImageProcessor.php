@@ -34,7 +34,7 @@ final class VipsCliImageProcessor implements ImageProcessor
             $this->run([
                 'vips', 'thumbnail', $source, $reading, (string) $maxWidth,
                 '--height', (string) (intdiv(self::WEBP_MAX_SIDE, $cell) * $tileSize), '--size', 'down',
-            ]);
+            ], untrustedInput: true);
             $width = (int) $this->run(['vipsheader', '-f', 'width', $reading]);
             $height = (int) $this->run(['vipsheader', '-f', 'height', $reading]);
             $columns = intdiv($width + $tileSize - 1, $tileSize);
@@ -85,15 +85,19 @@ final class VipsCliImageProcessor implements ImageProcessor
         $this->run([
             'vips', 'thumbnail', $source, sprintf('%s[Q=%d,keep=none]', $target, self::QUALITY), (string) $width,
             '--height', (string) $height, '--crop', 'attention', '--size', 'down',
-        ]);
+        ], untrustedInput: true);
     }
 
     /**
+     * Uploaded files are sniffed by content, not extension: a ".png" could reach the PDF, SVG or
+     * ImageMagick loaders. $untrustedInput limits vips to its fuzzed loaders (JPEG, PNG, WebP, GIF, ...).
+     * Not for every call: the pipeline's own .v and .mat intermediates use loaders vips marks untrusted.
+     *
      * @param list<string> $command
      */
-    private function run(array $command): string
+    private function run(array $command, bool $untrustedInput = false): string
     {
-        $process = new Process($command, timeout: 120);
+        $process = new Process($command, env: $untrustedInput ? ['VIPS_BLOCK_UNTRUSTED' => '1'] : [], timeout: 120);
         $process->mustRun();
 
         return trim($process->getOutput());

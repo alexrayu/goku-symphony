@@ -147,7 +147,14 @@ final class ReaderTest extends WebTestCase
         $this->client->request('GET', sprintf('/media/page/%d.webp', $published->getId()));
         self::assertResponseIsSuccessful();
         self::assertResponseHeaderSame('Content-Type', 'image/webp');
-        self::assertStringContainsString('immutable', (string) $this->client->getResponse()->headers->get('Cache-Control'));
+        $cacheControl = (string) $this->client->getResponse()->headers->get('Cache-Control');
+        self::assertStringContainsString('immutable', $cacheControl);
+        // Edge copies expire within the hour, so unpublishing reaches Cloudflare without a purge.
+        self::assertStringContainsString('s-maxage=3600', $cacheControl);
+        $lastModified = (string) $this->client->getResponse()->headers->get('Last-Modified');
+
+        $this->client->request('GET', sprintf('/media/page/%d.webp', $published->getId()), server: ['HTTP_IF_MODIFIED_SINCE' => $lastModified]);
+        self::assertResponseStatusCodeSame(304);
 
         $this->client->request('GET', sprintf('/media/page/%d.webp', $draft->getId()));
         self::assertResponseStatusCodeSame(404);
@@ -175,6 +182,7 @@ final class ReaderTest extends WebTestCase
             self::assertResponseIsSuccessful();
             self::assertResponseHeaderSame('Content-Type', $type);
             self::assertStringNotContainsString('immutable', (string) $this->client->getResponse()->headers->get('Cache-Control'));
+            self::assertStringContainsString('s-maxage=3600', (string) $this->client->getResponse()->headers->get('Cache-Control'));
 
             $this->client->request('GET', sprintf($url, $draft->getId()));
             self::assertResponseStatusCodeSame(404);
