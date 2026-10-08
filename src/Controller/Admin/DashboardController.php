@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller\Admin;
 
 use EasyCorp\Bundle\EasyAdminBundle\Attribute\AdminDashboard;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Dashboard;
 use EasyCorp\Bundle\EasyAdminBundle\Config\MenuItem;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Option\GrayScale;
@@ -39,6 +40,12 @@ final class DashboardController extends AbstractDashboardController
             ->setFaviconPath('/favicon.svg')
             ->setDefaultColorScheme('dark')
             ->setTheme(Theme::new()->primaryColor('#ff6a4d')->grays(GrayScale::ZINC));
+    }
+
+    // Optional fields left empty (e.g. a chapter without a title) show as blank cells, not a "Null" badge.
+    public function configureCrud(): Crud
+    {
+        return parent::configureCrud()->overrideTemplate('label/null', 'admin/label/null.html.twig');
     }
 
     public function configureMenuItems(): iterable

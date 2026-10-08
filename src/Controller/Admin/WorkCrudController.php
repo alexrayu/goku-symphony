@@ -25,7 +25,10 @@ final class WorkCrudController extends AbstractCrudController
 
     public function configureCrud(Crud $crud): Crud
     {
-        return $crud->setDefaultSort(['title' => 'ASC']);
+        return $crud
+            ->setEntityLabelInSingular('Work')
+            ->setEntityLabelInPlural('Works')
+            ->setDefaultSort(['title' => 'ASC']);
     }
 
     // EasyAdmin instantiates with no arguments; Work requires title and slug.

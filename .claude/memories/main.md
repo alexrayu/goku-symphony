@@ -80,4 +80,4 @@ Open question to the user: trim the `LATER.md` web-installer line to what is lef
 - Theme tokens + buttons in `templates/theme/_base.css.twig`, inlined by public and auth layouts; accent #ff6a4d with dark text on it (white on coral fails AA). EasyAdmin: `Theme::primaryColor` + zinc grays + dark default, logo in title (EA renders title raw, name escaped).
 - Error page `templates/bundles/TwigBundle/Exception/error.html.twig`; preview in dev at `/_error/404`.
 - Status: done, 29 tests + PHPStan green, screenshots checked desktop/mobile. Not rerun: Lighthouse. Uncommitted; user commits.
-- Possible follow-ups (not done): admin list polish (Number shows "1.0", null titles show "Null" badge), reader width cap on desktop, home ordering by recency (no timestamps yet).
+- Possible follow-ups (not done): reader width cap on desktop, home ordering by recency (no timestamps yet).

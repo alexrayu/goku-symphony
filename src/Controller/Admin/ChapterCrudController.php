@@ -40,7 +40,10 @@ final class ChapterCrudController extends AbstractCrudController
 
     public function configureCrud(Crud $crud): Crud
     {
-        return $crud->setDefaultSort(['work' => 'ASC', 'number' => 'ASC']);
+        return $crud
+            ->setEntityLabelInSingular('Chapter')
+            ->setEntityLabelInPlural('Chapters')
+            ->setDefaultSort(['work' => 'ASC', 'number' => 'ASC']);
     }
 
     public function __construct(private readonly EntityManagerInterface $em)
@@ -60,7 +63,9 @@ final class ChapterCrudController extends AbstractCrudController
     {
         yield AssociationField::new('work')->setFormTypeOption('constraints', [new NotBlank()]);
         // DECIMAL arrives as a string; sprintf formatting avoids the int|float-only Intl formatter.
-        yield NumberField::new('number')->setNumDecimals(1)->setStoredAsString()->setNumberFormat('%.1f');
+        // Lists show the public label ("12", "12.5"); the form keeps one decimal.
+        yield NumberField::new('number')->setNumDecimals(1)->setStoredAsString()->setNumberFormat('%.1f')
+            ->formatValue(static fn (mixed $value, Chapter $chapter): string => $chapter->getNumberLabel());
         yield TextField::new('title');
         yield ChoiceField::new('direction')->setChoices(ReadingDirection::cases());
         yield BooleanField::new('published');
