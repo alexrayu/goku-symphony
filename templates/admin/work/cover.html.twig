@@ -1,0 +1,9 @@
+{# Work detail: the cover readers see, the chosen one or the first chapter's first page once processed. #}
+{% set work = entity.instance %}
+{% set first = work.chapters|first %}
+{% set firstPage = first ? first.pages|first : null %}
+{% if work.coverVersion is not null or (firstPage and firstPage.status.value == 'ready') %}
+    <img src="{{ work_thumb_url(work, first ?: null) }}" alt="" width="140" height="196" class="rounded border" style="object-fit: cover">
+{% else %}
+    <span class="text-muted">None yet: upload one, or pages to the first chapter.</span>
+{% endif %}

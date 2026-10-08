@@ -11,6 +11,7 @@ use App\Factory\ChapterFactory;
 use App\Factory\PageFactory;
 use App\Ingest\ArchiveIngestor;
 use App\Ingest\DerivativeGenerator;
+use App\Ingest\Message\GenerateChapterCovers;
 use App\Ingest\Message\GenerateDerivative;
 use App\Ingest\Message\IngestArchive;
 use App\Ingest\StorageKeys;
@@ -139,6 +140,22 @@ final class IngestPipelineTest extends KernelTestCase
 
         self::assertSame(0, PageFactory::count(['chapter' => $chapter]));
         self::assertFalse(static::getContainer()->get('default.storage')->directoryExists(sprintf('originals/%d', $chapter->getId())));
+    }
+
+    public function testCoversAreRebuiltFromTheCurrentFirstPage(): void
+    {
+        $chapter = ChapterFactory::createOne();
+        $original = StorageKeys::original($chapter, 'png');
+        $file = $this->workDir.'/first.png';
+        (new Process(['vips', 'black', $file, '800', '1200']))->mustRun();
+        $storage = static::getContainer()->get('default.storage');
+        $storage->write($original, (string) file_get_contents($file));
+        PageFactory::createOne(['chapter' => $chapter, 'position' => 10, 'originalKey' => $original]);
+
+        static::getContainer()->get(DerivativeGenerator::class)->regenerateCovers(new GenerateChapterCovers((int) $chapter->getId()));
+
+        self::assertTrue($storage->fileExists(StorageKeys::cover($chapter)));
+        self::assertTrue($storage->fileExists(StorageKeys::thumbnail($chapter)));
     }
 
     /**

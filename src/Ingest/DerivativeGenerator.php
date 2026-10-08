@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Ingest;
 
+use App\Entity\Chapter;
 use App\Entity\Page;
 use App\Enum\PageStatus;
 use App\Image\ImageProcessor;
+use App\Ingest\Message\GenerateChapterCovers;
 use App\Ingest\Message\GenerateDerivative;
 use Doctrine\ORM\EntityManagerInterface;
 use League\Flysystem\FilesystemOperator;
@@ -49,29 +51,61 @@ final class DerivativeGenerator
 
         $source = $this->tempFile->download($page->getOriginalKey());
         $target = $source.'.webp';
-        $cover = $source.'.jpg';
-        $thumb = $source.'.thumb.webp';
         try {
             [$width, $height, $order] = $this->images->toScrambledWebp($source, $target, self::MAX_WIDTH, self::TILE_SIZE, self::TILE_GUTTER);
             $this->store($target, StorageKeys::derivative($page));
 
             if ($page->getChapter()->getPages()->first() === $page) {
-                $this->images->toCover($source, $cover, self::COVER_WIDTH, self::COVER_HEIGHT);
-                $this->store($cover, StorageKeys::cover($page->getChapter()));
-                $this->images->toCover($source, $thumb, self::THUMB_WIDTH, self::THUMB_HEIGHT);
-                $this->store($thumb, StorageKeys::thumbnail($page->getChapter()));
+                $this->storeCovers($page->getChapter(), $source);
             }
         } finally {
-            foreach ([$source, $target, $cover, $thumb] as $file) {
-                if (is_file($file)) {
-                    unlink($file);
-                }
-            }
+            $this->remove($source, $target);
         }
 
         // Reading-copy dimensions: what the reader displays and reserves space for.
         $page->setReadingCopy($width, $height, $order)->setStatus(PageStatus::Ready);
         $this->em->flush();
+    }
+
+    // A reorder put another page first: rebuild the chapter's cover and thumbnail from it.
+    #[AsMessageHandler]
+    public function regenerateCovers(GenerateChapterCovers $message): void
+    {
+        $first = $this->em->find(Chapter::class, $message->chapterId)?->getPages()->first();
+        if (!$first instanceof Page) {
+            return;
+        }
+
+        $source = $this->tempFile->download($first->getOriginalKey());
+        try {
+            $this->storeCovers($first->getChapter(), $source);
+        } finally {
+            $this->remove($source);
+        }
+    }
+
+    // Unscrambled link preview and listing thumbnail, both from the chapter's first page.
+    private function storeCovers(Chapter $chapter, string $source): void
+    {
+        $cover = $source.'.jpg';
+        $thumb = $source.'.thumb.webp';
+        try {
+            $this->images->toCover($source, $cover, self::COVER_WIDTH, self::COVER_HEIGHT);
+            $this->store($cover, StorageKeys::cover($chapter));
+            $this->images->toCover($source, $thumb, self::THUMB_WIDTH, self::THUMB_HEIGHT);
+            $this->store($thumb, StorageKeys::thumbnail($chapter));
+        } finally {
+            $this->remove($cover, $thumb);
+        }
+    }
+
+    private function remove(string ...$files): void
+    {
+        foreach ($files as $file) {
+            if (is_file($file)) {
+                unlink($file);
+            }
+        }
     }
 
     private function store(string $file, string $key): void

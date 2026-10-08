@@ -78,6 +78,7 @@ final class WorkCrudController extends AbstractCrudController
         yield Field::new('coverUpload', 'Cover')->setFormType(FileType::class)->setFormTypeOptions(['required' => false])
             ->onlyOnForms()
             ->setHelp('Optional. PNG, JPEG or WebP, cropped to a 5:7 card and a 1200x630 link preview. Without one, the first page of the first chapter is used.');
+        yield Field::new('coverVersion', 'Cover')->onlyOnDetail()->setTemplatePath('admin/work/cover.html.twig');
         if (Crud::PAGE_EDIT === $pageName && null !== $this->getContext()?->getEntity()->getInstance()?->getCoverVersion()) {
             yield BooleanField::new('removeCover', 'Remove the chosen cover')->renderAsSwitch(false)->onlyOnForms();
         }

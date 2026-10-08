@@ -1,12 +1,11 @@
 import { Controller } from '@hotwired/stimulus';
+import { drawTiles, tileLayout } from '../tiles.js';
 
 // iOS Safari refuses canvases over ~16.7 MP; 4096 rows keeps a 1200 px wide segment far below.
 // A multiple of the tile size, so no tile row straddles two segments.
 const SEGMENT_HEIGHT = 4096;
 
-// Rebuilds scrambled pages on canvas. Format: order[sourceTile] = slot, row-major; each slot is a
-// cell of tile + 2 * gutter pixels, the tile sits at the gutter offset inside it.
-// Pages near the viewport are drawn, distant ones release their canvases. Saving is made
+// Rebuilds scrambled pages on canvas (tiles.js). Pages near the viewport are drawn, distant ones release their canvases. Saving is made
 // inconvenient, not impossible: the tile order is public.
 export default class extends Controller {
     static targets = ['page'];
@@ -77,34 +76,14 @@ export default class extends Controller {
         }
     }
 
-    draw(bitmap, { width, height, order }) {
-        const tile = this.tileValue;
-        const gutter = this.gutterValue;
-        const cell = tile + 2 * gutter;
-        const [w, h] = [Number(width), Number(height)];
-        const columns = Math.ceil(w / tile);
-        const rows = Math.ceil(h / tile);
-        const slots = order.split(',').map(Number);
-        if (slots.length !== columns * rows || bitmap.width !== columns * cell || bitmap.height !== rows * cell) {
-            throw new Error('Image does not match its tile order.');
-        }
-
+    draw(bitmap, data) {
+        const layout = tileLayout(bitmap, data, this.tileValue, this.gutterValue);
         const canvases = [];
-        for (let top = 0; top < h; top += SEGMENT_HEIGHT) {
+        for (let top = 0; top < layout.h; top += SEGMENT_HEIGHT) {
             const canvas = document.createElement('canvas');
-            canvas.width = w;
-            canvas.height = Math.min(SEGMENT_HEIGHT, h - top);
-            const context = canvas.getContext('2d');
-            for (let row = top / tile; row < Math.ceil((top + canvas.height) / tile); row++) {
-                for (let column = 0; column < columns; column++) {
-                    const slot = slots[row * columns + column];
-                    const x = column * tile;
-                    const y = row * tile;
-                    const tw = Math.min(tile, w - x);
-                    const th = Math.min(tile, h - y);
-                    context.drawImage(bitmap, (slot % columns) * cell + gutter, Math.floor(slot / columns) * cell + gutter, tw, th, x, y - top, tw, th);
-                }
-            }
+            canvas.width = layout.w;
+            canvas.height = Math.min(SEGMENT_HEIGHT, layout.h - top);
+            drawTiles(canvas.getContext('2d'), bitmap, layout, top / layout.tile, Math.ceil((top + canvas.height) / layout.tile), top);
             canvases.push(canvas);
         }
 

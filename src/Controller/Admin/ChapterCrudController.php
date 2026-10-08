@@ -13,6 +13,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use EasyCorp\Bundle\EasyAdminBundle\Attribute\AdminRoute;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Action;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Actions;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Assets;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
 use EasyCorp\Bundle\EasyAdminBundle\Config\KeyValueStore;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Option\EA;
@@ -84,7 +85,13 @@ final class ChapterCrudController extends AbstractCrudController
         yield BooleanField::new('published');
         // Set on first publication, never edited by hand.
         yield DateTimeField::new('publishedAt', 'First published')->hideOnForm();
-        yield CollectionField::new('pages')->onlyOnDetail()->setTemplatePath('admin/chapter/pages.html.twig');
+        yield CollectionField::new('pages')->setLabel(false)->onlyOnDetail()->setTemplatePath('admin/chapter/pages.html.twig');
+    }
+
+    // The page grid's Stimulus controller.
+    public function configureAssets(Assets $assets): Assets
+    {
+        return $assets->addAssetMapperEntry('app');
     }
 
     public function configureActions(Actions $actions): Actions
@@ -162,6 +169,26 @@ final class ChapterCrudController extends AbstractCrudController
         }
 
         return $this->render('admin/chapter/delete_pages.html.twig', ['chapter' => $chapter]);
+    }
+
+    // One drag-and-drop move from the page grid: the page goes right after "after", or first without it.
+    // A refusal is flashed for the reload the grid does on any error.
+    #[AdminRoute('/{id}/move-page', 'move_page', options: ['methods' => ['POST']])]
+    public function movePage(#[MapEntity] Chapter $chapter, Request $request): Response
+    {
+        try {
+            if (!$this->isCsrfTokenValid('chapter_move_page', (string) $request->request->get('_token'))) {
+                throw new \InvalidArgumentException('Invalid CSRF token. Reload the page and try again.');
+            }
+            $after = $request->request->has('after') ? $request->request->getInt('after') : null;
+            $this->chapterPages->move($chapter, $request->request->getInt('page'), $after);
+        } catch (\InvalidArgumentException $e) {
+            $this->addFlash('danger', $e->getMessage());
+
+            return new Response($e->getMessage(), Response::HTTP_CONFLICT);
+        }
+
+        return new Response(null, Response::HTTP_NO_CONTENT);
     }
 
     private function workUrl(Work $work): string

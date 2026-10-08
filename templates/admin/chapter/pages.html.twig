@@ -1,17 +1,25 @@
-{# Detail-page listing of a chapter's pages with their processing status. #}
+{# Chapter detail: page thumbnails in reading order, reordered by drag and drop once processing is done. #}
+<h2 class="h5">Pages</h2>
 {% if field.value is empty %}
     <span class="text-muted">No pages yet.</span>
 {% else %}
-    <table class="table table-sm">
-        <thead><tr><th>Position</th><th>Status</th><th>Size</th></tr></thead>
-        <tbody>
+    {% set busy = field.value|filter(page => page.status.value in ['pending', 'processing']) is not empty %}
+    <p class="text-muted small">{{ busy ? 'Reordering is available once all pages are processed.' : 'Drag a page to move it. The first page is the chapter cover.' }}</p>
+    <ol class="list-unstyled d-flex flex-wrap gap-3" data-controller="chapter-pages"
+        data-chapter-pages-tile-value="{{ constant('App\\Ingest\\DerivativeGenerator::TILE_SIZE') }}"
+        data-chapter-pages-gutter-value="{{ constant('App\\Ingest\\DerivativeGenerator::TILE_GUTTER') }}"
+        data-chapter-pages-move-url-value="{{ ea_url().setAction('movePage').setEntityId(entity.instance.id) }}"
+        data-chapter-pages-token-value="{{ csrf_token('chapter_move_page') }}"
+        data-action="dragover->chapter-pages#over drop->chapter-pages#drop">
         {% for page in field.value %}
-            <tr>
-                <td>{{ page.position }}</td>
-                <td>{{ page.status.value }}</td>
-                <td>{{ page.width is null ? '' : page.width ~ ' × ' ~ page.height }}</td>
-            </tr>
+            {% set ready = page.status.value == 'ready' %}
+            <li style="width: 120px; cursor: {{ busy ? 'default' : 'grab' }}" data-chapter-pages-target="page" data-id="{{ page.id }}"
+                {% if not busy %}draggable="true" data-action="dragstart->chapter-pages#start dragend->chapter-pages#end"{% endif %}
+                {% if ready %}data-src="{{ page_image_url(page) }}" data-width="{{ page.width }}" data-height="{{ page.height }}" data-order="{{ page.tileOrder }}"{% endif %}>
+                <div class="page-thumb d-flex align-items-center justify-content-center border rounded overflow-hidden small text-muted"
+                     style="aspect-ratio: {{ ready ? page.width ~ ' / ' ~ page.height : '5 / 7' }}">{{ ready ? '' : page.status.value }}</div>
+                <div class="small text-center mt-1"><span data-chapter-pages-target="number">{{ loop.index }}</span></div>
+            </li>
         {% endfor %}
-        </tbody>
-    </table>
+    </ol>
 {% endif %}

@@ -9,9 +9,13 @@ use App\Enum\PageStatus;
 use App\Factory\ChapterFactory;
 use App\Factory\PageFactory;
 use App\Factory\UserFactory;
+use App\Entity\Page;
 use App\Ingest\ChapterPages;
+use App\Ingest\Message\GenerateChapterCovers;
 use App\Ingest\StorageKeys;
+use Doctrine\ORM\EntityManagerInterface;
 use League\Flysystem\FilesystemOperator;
+use Symfony\Component\Messenger\Transport\InMemory\InMemoryTransport;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Zenstruck\Foundry\Test\Factories;
 use Zenstruck\Foundry\Test\ResetDatabase;
@@ -91,6 +95,97 @@ final class ChapterPagesTest extends WebTestCase
             self::assertStringContainsString('still being processed', $e->getMessage());
         }
         self::assertSame(1, PageFactory::count(['chapter' => $chapter]));
+    }
+
+    public function testMoveTakesTheGapBetweenItsNewNeighbours(): void
+    {
+        static::bootKernel();
+        $chapter = ChapterFactory::createOne();
+        [$first, $second, $third] = $this->pagesAt($chapter, [10, 20, 30]);
+
+        static::getContainer()->get(ChapterPages::class)->move($chapter, (int) $third->getId(), $first->getId());
+
+        self::assertSame([[$first->getId(), 10], [$third->getId(), 15], [$second->getId(), 20]], $this->order($chapter));
+        self::assertCount(0, $this->asyncTransport()->getSent(), 'The first page is unchanged.');
+    }
+
+    public function testMoveRespacesTheChapterWhenNoPositionIsLeft(): void
+    {
+        static::bootKernel();
+        $chapter = ChapterFactory::createOne();
+        [$first, $second, $third] = $this->pagesAt($chapter, [10, 11, 12]);
+
+        static::getContainer()->get(ChapterPages::class)->move($chapter, (int) $third->getId(), $first->getId());
+
+        self::assertSame([[$first->getId(), 10], [$third->getId(), 20], [$second->getId(), 30]], $this->order($chapter));
+    }
+
+    public function testANewFirstPageRebuildsTheCovers(): void
+    {
+        $client = static::createClient();
+        $client->loginUser(UserFactory::createOne());
+        $chapter = ChapterFactory::createOne();
+        [, $second] = $this->pagesAt($chapter, [10, 20]);
+
+        $crawler = $client->request('GET', sprintf('/admin/chapter/%d', $chapter->getId()));
+        $token = (string) $crawler->filter('[data-chapter-pages-token-value]')->attr('data-chapter-pages-token-value');
+        $client->request('POST', sprintf('/admin/chapter/%d/move-page', $chapter->getId()), ['_token' => $token, 'page' => $second->getId()]);
+
+        self::assertResponseStatusCodeSame(204);
+        self::assertSame($second->getId(), $this->order($chapter)[0][0]);
+        $sent = $this->asyncTransport()->getSent();
+        self::assertCount(1, $sent);
+        self::assertEquals(new GenerateChapterCovers((int) $chapter->getId()), $sent[0]->getMessage());
+    }
+
+    public function testMoveNeedsAValidTokenAndAPageOfTheChapter(): void
+    {
+        $client = static::createClient();
+        $client->loginUser(UserFactory::createOne());
+        $chapter = ChapterFactory::createOne();
+        [$first, $second] = $this->pagesAt($chapter, [10, 20]);
+        $foreign = PageFactory::createOne();
+        $url = sprintf('/admin/chapter/%d/move-page', $chapter->getId());
+
+        $client->request('POST', $url, ['_token' => 'forged', 'page' => $second->getId()]);
+        self::assertResponseStatusCodeSame(409);
+
+        $crawler = $client->request('GET', sprintf('/admin/chapter/%d', $chapter->getId()));
+        $token = (string) $crawler->filter('[data-chapter-pages-token-value]')->attr('data-chapter-pages-token-value');
+        $client->request('POST', $url, ['_token' => $token, 'page' => $foreign->getId()]);
+        self::assertResponseStatusCodeSame(409);
+
+        self::assertSame([[$first->getId(), 10], [$second->getId(), 20]], $this->order($chapter));
+    }
+
+    /**
+     * @param list<int> $positions
+     *
+     * @return list<Page>
+     */
+    private function pagesAt(Chapter $chapter, array $positions): array
+    {
+        return array_map(static fn (int $position): Page => PageFactory::createOne(['chapter' => $chapter, 'position' => $position]), $positions);
+    }
+
+    /**
+     * @return list<array{int|null, int}> page id and position, in reading order, as stored
+     */
+    private function order(Chapter $chapter): array
+    {
+        $em = static::getContainer()->get(EntityManagerInterface::class);
+        $em->clear();
+        $pages = $em->getRepository(Page::class)->findBy(['chapter' => $chapter->getId()], ['position' => 'ASC']);
+
+        return array_map(static fn (Page $page): array => [$page->getId(), $page->getPosition()], $pages);
+    }
+
+    private function asyncTransport(): InMemoryTransport
+    {
+        $transport = static::getContainer()->get('messenger.transport.async');
+        self::assertInstanceOf(InMemoryTransport::class, $transport);
+
+        return $transport;
     }
 
     /**

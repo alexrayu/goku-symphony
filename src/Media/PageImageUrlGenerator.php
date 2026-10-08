@@ -31,13 +31,15 @@ final class PageImageUrlGenerator
         return $this->urlGenerator->generate('media_thumb', ['id' => $chapter->getId()]);
     }
 
-    // The work's chosen cover, else the first chapter's.
+    // The work's chosen cover, else the first chapter's; null with neither.
     #[AsTwigFunction('work_thumb_url')]
-    public function workThumbnail(Work $work, Chapter $first): string
+    public function workThumbnail(Work $work, ?Chapter $first): ?string
     {
-        return null === $work->getCoverVersion()
-            ? $this->thumbnail($first)
-            : $this->urlGenerator->generate('media_work_thumb', ['id' => $work->getId(), 'version' => $work->getCoverVersion()]);
+        if (null !== $work->getCoverVersion()) {
+            return $this->urlGenerator->generate('media_work_thumb', ['id' => $work->getId(), 'version' => $work->getCoverVersion()]);
+        }
+
+        return null === $first ? null : $this->thumbnail($first);
     }
 
     #[AsTwigFunction('work_cover_url')]

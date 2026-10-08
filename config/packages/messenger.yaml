@@ -9,6 +9,7 @@ framework:
         routing:
             App\Ingest\Message\IngestArchive: async
             App\Ingest\Message\GenerateDerivative: async
+            App\Ingest\Message\GenerateChapterCovers: async
 
 when@test:
     framework:
