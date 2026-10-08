@@ -1,8 +1,8 @@
 # main (project memory)
 
-## Next steps (2026-10-08, all work committed and pushed at 120dc39)
-1. Done 2026-10-08: Nginx verification in the phase-6 container passed (security headers + hash CSP on 200 and 304, media 200/304 via X-Accel with correct Cache-Control, both 10-08 migrations ran on deploy). Reader preload removed (see Decisions). Commit pending.
-2. Now (user, 2026-10-08): manual QA and polish locally before launch; fix what the user reports. Launch waits until then.
+## Next steps (2026-10-08, all work committed and pushed at 010c2b2)
+1. Done 2026-10-08: admin work hub, load test + DB socket/persistent DSN, libvips thread pin, reader and admin mobile QA. 1 GB droplet measured fine.
+2. Now (user): final manual test (incl. a real iPhone over LAN), then launch. Open, user not yet decided: reader header link tap targets (22-28 px) and 360 px top nav wrap; "2 GB" wording in `fpm-pool.conf.j2` comment and CLAUDE.md if launching on 1 GB.
 3. Launch (user's steps): create the droplet; fill `ansible/inventory.yml` (`ansible_host: TODO`) and `app_hostname: TODO` in `group_vars/all.yml`; real `ansible/secrets.yml` with the Cloudflare origin cert; `make provision`, `make deploy`; `app:user:create` over SSH BEFORE the DNS record; proxied DNS record + the Cache Rule from `ansible/README.md`. Then Claude checks on the live site that Cloudflare honours media `s-maxage=3600`, and runs Lighthouse with Cloudflare. Slice done when a stranger opens a reader URL.
 4. Small: trim the `LATER.md` web-installer line to what is left (requirements check, DB credentials, `.env.local`, migrations; the admin user is done). User-owned pieces still unwritten (teaching mode paused; ask whether Claude writes them): `make check` target, smoke test, page position-gap helper test, login functional test (UserFactory password is "!", so `loginUser()` or a hashed default).
 5. Out of scope until the slice is live: paged/RTL reader (restores the hidden `direction` field), reading progress, follows, search, comments, likes, ratings, collections, notifications; shared-hosting port (LATER.md).
