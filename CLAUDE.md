@@ -19,7 +19,7 @@ Branch memories live in `.claude/memories/<branch>.md` (committed, public repo),
 
 ## Working agreement: build mode now, teaching mode later
 
-- Since 2026-10-06 (from phase 6): build without teaching stops. No query-count predictions, no "yours to write" pieces, no per-step proposals. Still ask on genuine blockers and dependency additions; still never commit. At the end of a task, list the changed files and propose one commit message for all of them (user rule 2026-10-08: never suggest several commits).
+- Since 2026-10-06 (from phase 6): build without teaching stops. No query-count predictions, no "yours to write" pieces, no per-step proposals. Still ask on genuine blockers and dependency additions; still never commit. At the end of a task, list the changed files and propose one commit message for all of them: one terse sentence, no body, no Co-Authored-By (user rules 2026-10-08).
 - When the user asks to be taught, apply the teaching rules below to the finished code.
 
 ### Teaching mode (paused)

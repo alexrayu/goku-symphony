@@ -55,7 +55,6 @@ final class DashboardController extends AbstractDashboardController
     public function configureMenuItems(): iterable
     {
         yield MenuItem::linkTo(WorkCrudController::class, 'Works', 'fa fa-book');
-        yield MenuItem::linkTo(ChapterCrudController::class, 'Chapters', 'fa fa-file-lines');
         yield MenuItem::linkTo(SiteSettingsCrudController::class, 'Site settings', 'fa fa-palette');
         yield MenuItem::linkToUrl('View site', 'fa fa-arrow-up-right-from-square', $this->generateUrl('home'));
     }

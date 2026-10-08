@@ -14,6 +14,9 @@ use EasyCorp\Bundle\EasyAdminBundle\Attribute\AdminRoute;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Action;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Actions;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
+use EasyCorp\Bundle\EasyAdminBundle\Config\KeyValueStore;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Option\EA;
+use EasyCorp\Bundle\EasyAdminBundle\Context\AdminContext;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
 use EasyCorp\Bundle\EasyAdminBundle\Field\AssociationField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\BooleanField;
@@ -25,9 +28,10 @@ use EasyCorp\Bundle\EasyAdminBundle\Field\TextareaField;
 use EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGenerator;
 use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Validator\Constraints\NotBlank;
 
 /**
@@ -51,21 +55,24 @@ final class ChapterCrudController extends AbstractCrudController
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly ChapterPages $chapterPages,
+        private readonly AdminUrlGenerator $urlGenerator,
     ) {
     }
 
-    // Chapter requires a Work; preselect the newest one (the choice field only accepts managed entities).
+    // Chapters are added from their work's page (?work=id), numbered after the last one.
     public function createEntity(string $entityFqcn): Chapter
     {
-        $work = $this->em->getRepository(Work::class)->findOneBy([], ['id' => 'DESC'])
-            ?? throw new ConflictHttpException('Create a Work before adding chapters.');
+        $work = $this->em->find(Work::class, $this->getContext()?->getRequest()->query->getInt('work'))
+            ?? throw new NotFoundHttpException('Add chapters from their work\'s page.');
+        $last = $work->getChapters()->last();
 
-        return new Chapter($work, '1');
+        return new Chapter($work, false === $last ? '1' : (string) (floor((float) $last->getNumber()) + 1));
     }
 
     public function configureFields(string $pageName): iterable
     {
-        yield AssociationField::new('work')->setFormTypeOption('constraints', [new NotBlank()]);
+        // Fixed by the work page when creating; editing can still move a chapter.
+        yield AssociationField::new('work')->setFormTypeOption('constraints', [new NotBlank()])->hideWhenCreating();
         // DECIMAL arrives as a string; sprintf formatting avoids the int|float-only Intl formatter.
         // Lists show the public label ("12", "12.5"); the form keeps one decimal.
         yield NumberField::new('number')->setNumDecimals(1)->setStoredAsString()->setNumberFormat('%.1f')
@@ -90,12 +97,38 @@ final class ChapterCrudController extends AbstractCrudController
             ->displayIf(static fn (Chapter $chapter): bool => !$chapter->getPages()->isEmpty());
 
         return $actions
+            ->remove(Crud::PAGE_INDEX, Action::NEW)
+            ->update(Crud::PAGE_DETAIL, Action::INDEX, fn (Action $action): Action => $action->setLabel('Back to work')
+                ->linkToUrl(fn (Chapter $chapter): string => $this->workUrl($chapter->getWork())))
             ->add(Crud::PAGE_INDEX, Action::DETAIL)
             ->add(Crud::PAGE_INDEX, $preview)
             ->add(Crud::PAGE_INDEX, $upload)
             ->add(Crud::PAGE_DETAIL, $preview)
             ->add(Crud::PAGE_DETAIL, $upload)
             ->add(Crud::PAGE_DETAIL, $deletePages);
+    }
+
+    // Save and return / add another go back to the chapter's work, not the flat chapter list.
+    protected function getRedirectResponseAfterSave(AdminContext $context, string $action): RedirectResponse
+    {
+        /** @var Chapter $chapter */
+        $chapter = $context->getEntity()->getInstance();
+
+        return match ($context->getRequest()->request->all()['ea']['newForm']['btn'] ?? null) {
+            Action::SAVE_AND_RETURN => $this->redirect($this->workUrl($chapter->getWork())),
+            Action::SAVE_AND_ADD_ANOTHER => $this->redirect($this->urlGenerator->setController(self::class)->setAction(Action::NEW)
+                ->unset(EA::ENTITY_ID)->set('work', $chapter->getWork()->getId())->generateUrl()),
+            default => parent::getRedirectResponseAfterSave($context, $action),
+        };
+    }
+
+    public function delete(AdminContext $context): KeyValueStore|Response
+    {
+        /** @var Chapter $chapter */
+        $chapter = $context->getEntity()->getInstance();
+        $response = parent::delete($context);
+
+        return $response instanceof RedirectResponse ? $this->redirect($this->workUrl($chapter->getWork())) : $response;
     }
 
     // Stored files go with the chapter; a chapter still processing is kept, with the reason shown.
@@ -128,6 +161,12 @@ final class ChapterCrudController extends AbstractCrudController
         }
 
         return $this->render('admin/chapter/delete_pages.html.twig', ['chapter' => $chapter]);
+    }
+
+    private function workUrl(Work $work): string
+    {
+        return $this->urlGenerator->setController(WorkCrudController::class)->setAction(Action::DETAIL)
+            ->setEntityId($work->getId())->unset('work')->generateUrl();
     }
 
     private function readerUrl(Chapter $chapter): string

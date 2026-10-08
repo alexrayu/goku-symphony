@@ -40,6 +40,27 @@ class ChapterRepository extends ServiceEntityRepository
     }
 
     /**
+     * All chapters of a work with their page counts, in one query, for the admin work page.
+     *
+     * @return list<array{chapter: Chapter, pageCount: int}>
+     */
+    public function findWithPageCounts(Work $work): array
+    {
+        /** @var list<array{0: Chapter, pageCount: int|string}> $rows */
+        $rows = $this->createQueryBuilder('c')
+            ->select('c', 'COUNT(p.id) AS pageCount')
+            ->leftJoin('c.pages', 'p')
+            ->where('c.work = :work')
+            ->setParameter('work', $work)
+            ->groupBy('c.id')
+            ->orderBy('c.number', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        return array_map(static fn (array $row): array => ['chapter' => $row[0], 'pageCount' => (int) $row['pageCount']], $rows);
+    }
+
+    /**
      * Readable chapters of a work for the chapter list; pages are not loaded.
      * Drafts are included for logged-in users previewing before release.
      *

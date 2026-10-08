@@ -1,0 +1,28 @@
+{# Work detail: its chapters, each linking to its own pages, edit form and upload. #}
+{% set rows = field.customOptions.get('rows') %}
+{% if rows is empty %}
+    <span class="text-muted">No chapters yet.</span>
+{% else %}
+    {% set crud = 'App\\Controller\\Admin\\ChapterCrudController' %}
+    {# Zero width keeps the table from widening EasyAdmin's field grid on phones; it scrolls instead. #}
+    <div class="table-responsive" style="width: 0; min-width: 100%"><table class="table table-sm">
+        <thead><tr><th>Number</th><th>Title</th><th>Published</th><th>First published</th><th>Pages</th><th></th></tr></thead>
+        <tbody>
+        {% for row in rows %}
+            {% set chapter = row.chapter %}
+            <tr>
+                <td><a href="{{ ea_url().setController(crud).setAction('detail').setEntityId(chapter.id) }}">{{ chapter.numberLabel }}</a></td>
+                <td>{{ chapter.title }}</td>
+                <td>{{ chapter.published ? 'Yes' : 'No' }}</td>
+                <td>{{ chapter.publishedAt ? chapter.publishedAt|date('Y-m-d H:i') }}</td>
+                <td>{{ row.pageCount }}</td>
+                <td class="text-end text-nowrap">
+                    <a href="{{ ea_url().setController(crud).setAction('edit').setEntityId(chapter.id) }}">Edit</a>
+                    &middot;
+                    <a href="{{ ea_url().setController(crud).setAction('uploadPages').setEntityId(chapter.id) }}">Upload pages</a>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table></div>
+{% endif %}

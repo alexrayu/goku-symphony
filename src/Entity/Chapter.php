@@ -10,12 +10,14 @@ use App\Repository\ChapterRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 #[ORM\Entity(repositoryClass: ChapterRepository::class)]
 #[ORM\Table(name: 'chapter')]
 #[ORM\UniqueConstraint(name: 'chapter_work_number', columns: ['work_id', 'number'])]
+#[UniqueEntity(fields: ['work', 'number'], message: 'This work already has a chapter with this number.', errorPath: 'number')]
 class Chapter
 {
     // How long a chapter counts as new after its first publication.
