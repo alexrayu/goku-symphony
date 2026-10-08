@@ -98,8 +98,6 @@ final class ReaderTest extends WebTestCase
         ));
         self::assertStringContainsString('aspect-ratio: 800 / 3000', (string) $pages->eq(0)->attr('style'));
         self::assertStringStartsWith('/media/page/', (string) $pages->eq(0)->attr('data-src'));
-        // The first page is fetched alongside the JS, and the progress bar is in place.
-        self::assertSame($pages->eq(0)->attr('data-src'), $crawler->filter('link[rel=preload][as=fetch]')->attr('href'));
         self::assertCount(1, $crawler->filter('.reader-progress'));
 
         // Installed check + site settings (both cached outside tests) + work by slug + chapter list

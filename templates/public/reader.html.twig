@@ -46,8 +46,6 @@
 } %}
 
 {% block javascripts %}
-    {# The first page is the LCP: fetch it alongside the JS, not after it. Matches the controller's fetch() (same-origin credentials). #}
-    {% if pages is not empty %}<link rel="preload" as="fetch" href="{{ page_image_url(pages|first) }}" crossorigin="anonymous">{% endif %}
     {{ importmap('app') }}
 {% endblock %}
 
