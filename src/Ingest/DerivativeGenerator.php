@@ -25,6 +25,9 @@ final class DerivativeGenerator
     // Open Graph's recommended link-preview size.
     private const COVER_WIDTH = 1200;
     private const COVER_HEIGHT = 630;
+    // 5:7, close to a printed manga volume; 2x the listing card width.
+    private const THUMB_WIDTH = 400;
+    private const THUMB_HEIGHT = 560;
 
     public function __construct(
         private readonly EntityManagerInterface $em,
@@ -47,16 +50,19 @@ final class DerivativeGenerator
         $source = $this->tempFile->download($page->getOriginalKey());
         $target = $source.'.webp';
         $cover = $source.'.jpg';
+        $thumb = $source.'.thumb.webp';
         try {
             [$width, $height, $order] = $this->images->toScrambledWebp($source, $target, self::MAX_WIDTH, self::TILE_SIZE, self::TILE_GUTTER);
             $this->store($target, StorageKeys::derivative($page));
 
             if ($page->getChapter()->getPages()->first() === $page) {
-                $this->images->toCoverJpeg($source, $cover, self::COVER_WIDTH, self::COVER_HEIGHT);
+                $this->images->toCover($source, $cover, self::COVER_WIDTH, self::COVER_HEIGHT);
                 $this->store($cover, StorageKeys::cover($page->getChapter()));
+                $this->images->toCover($source, $thumb, self::THUMB_WIDTH, self::THUMB_HEIGHT);
+                $this->store($thumb, StorageKeys::thumbnail($page->getChapter()));
             }
         } finally {
-            foreach ([$source, $target, $cover] as $file) {
+            foreach ([$source, $target, $cover, $thumb] as $file) {
                 if (is_file($file)) {
                     unlink($file);
                 }

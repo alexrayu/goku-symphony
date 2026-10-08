@@ -30,4 +30,10 @@ final class StorageKeys
     {
         return sprintf('covers/%d.jpg', $chapter->getId());
     }
+
+    // Unscrambled portrait thumbnail for listings, from the same page as the cover.
+    public static function thumbnail(Chapter $chapter): string
+    {
+        return sprintf('thumbs/%d.webp', $chapter->getId());
+    }
 }

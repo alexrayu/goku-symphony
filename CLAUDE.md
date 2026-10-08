@@ -69,3 +69,4 @@ Paged/RTL reader, reading progress, follows, search, comments, likes, ratings, c
 - Do not set `config.platform.php` below the container's PHP patch version.
 - `versions.env` is passed via `--env-file`; Compose's default `.env` is Symfony's.
 - Image-quality checks (scrambling, seams, compression): test gradients and colour in the real browser, not only text on white. Text-on-white hid tile seams that showed in the reader.
+- Dev DB pages ingested before a derivative-format change (scrambling, thumbs) render broken. Re-ingest demo content before judging the UI; generator and uploader in `~/Documents/tickets/goku-symfony/ui-polish/`.

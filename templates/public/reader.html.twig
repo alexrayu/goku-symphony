@@ -3,6 +3,7 @@
 {% set oneshot = work.type.value == 'oneshot' %}
 {% set chapter_name = 'Chapter ' ~ chapter.numberLabel ~ (chapter.title ? ': ' ~ chapter.title : '') %}
 {% set work_url = url('work_show', {slug: work.slug}) %}
+{% set work_path = path('work_show', {slug: work.slug}) %}
 {% set canonical = oneshot ? work_url : url('chapter_read', {slug: work.slug, number: chapter.numberLabel}) %}
 {% set seo = {
     title: (oneshot ? work.title : work.title ~ ' ' ~ chapter_name) ~ ' | ' ~ site_name,
@@ -42,17 +43,34 @@
 
 {% block javascripts %}{{ importmap('app') }}{% endblock %}
 
+{% macro chapter_link(work, chapter, label, class = '') %}
+    {% if chapter %}
+        <a class="button {{ class }}" href="{{ path('chapter_read', {slug: work.slug, number: chapter.numberLabel}) }}">{{ label }}</a>
+    {% endif %}
+{% endmacro %}
+
 {% block crumbs %}
-    {% if oneshot %}
-        <h1>{{ work.title }}</h1>
-    {% else %}
-        <a href="{{ work_url }}">{{ work.title }}</a>
-        <h1 class="muted">{{ chapter_name }}</h1>
+    {% if not oneshot %}
+        <span class="crumb"><a href="{{ work_path }}">{{ work.title }}</a></span>
     {% endif %}
 {% endblock %}
 
 {% block main %}
     <main class="reader">
+        <header class="reader-head wrap">
+            {% if oneshot %}
+                <h1>{{ work.title }}</h1>
+                {% if work.description %}<p class="muted">{{ work.description }}</p>{% endif %}
+            {% else %}
+                <h1>Chapter {{ chapter.numberLabel }}</h1>
+                {% if chapter.title %}<p class="muted">{{ chapter.title }}</p>{% endif %}
+                <nav class="chapter-nav" aria-label="Chapters">
+                    {{ _self.chapter_link(work, previous, 'Previous') }}
+                    <a class="button" href="{{ work_path }}">All chapters</a>
+                    {{ _self.chapter_link(work, next, 'Next') }}
+                </nav>
+            {% endif %}
+        </header>
         {# Pages are scrambled tiles, rebuilt on canvas by the reader controller; the box reserves the space. #}
         <div class="pages" data-controller="reader" data-reader-tile-value="{{ constant('App\\Ingest\\DerivativeGenerator::TILE_SIZE') }}"
              data-reader-gutter-value="{{ constant('App\\Ingest\\DerivativeGenerator::TILE_GUTTER') }}">
@@ -66,8 +84,20 @@
             {% endfor %}
         </div>
         <noscript><p class="reader-end">Turn on JavaScript to read this chapter.</p></noscript>
-        {% if not oneshot %}
-            <p class="reader-end"><a href="{{ work_url }}">Back to chapters</a></p>
-        {% endif %}
+        <section class="reader-end">
+            {% if oneshot %}
+                <h2>The end</h2>
+                <p class="muted">Thanks for reading {{ work.title }}.</p>
+                <div class="chapter-nav"><a class="button primary" href="{{ path('home') }}">More works</a></div>
+            {% else %}
+                <h2>End of chapter {{ chapter.numberLabel }}</h2>
+                <p class="muted">{{ next ? 'Up next: Chapter ' ~ next.numberLabel ~ (next.title ? ': ' ~ next.title) : 'You are caught up.' }}</p>
+                <div class="chapter-nav">
+                    {{ _self.chapter_link(work, previous, 'Previous') }}
+                    <a class="button{{ next ? '' : ' primary' }}" href="{{ work_path }}">All chapters</a>
+                    {{ _self.chapter_link(work, next, 'Next chapter', 'primary') }}
+                </div>
+            {% endif %}
+        </section>
     </main>
 {% endblock %}

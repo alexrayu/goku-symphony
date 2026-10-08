@@ -8,16 +8,32 @@
 } %}
 
 {% block main %}
-    <main>
-        <h1>{{ site_name }}</h1>
-        <p class="muted">{{ site_description }}</p>
-        <h2>Works</h2>
-        {% if works is empty %}
-            <p class="muted">Nothing published yet.</p>
+    <main class="wrap">
+        <section class="intro">
+            <h1>{{ site_name }}</h1>
+            <p class="muted">{{ site_description }}</p>
+        </section>
+        <h2 class="section-title">Works{% if shelf is not empty %} <span>{{ shelf|length }}</span>{% endif %}</h2>
+        {% if shelf is empty %}
+            <p class="empty muted">Nothing published yet.</p>
         {% else %}
-            <ul class="list">
-                {% for work in works %}
-                    <li><a href="{{ path('work_show', {slug: work.slug}) }}">{{ work.title }}</a></li>
+            <ul class="shelf">
+                {% for item in shelf %}
+                    {% set oneshot = item.work.type.value == 'oneshot' %}
+                    <li class="card">
+                        <a href="{{ path('work_show', {slug: item.work.slug}) }}">
+                            <img class="cover" src="{{ chapter_thumb_url(item.first) }}" alt="" width="400" height="560"
+                                 {{ loop.index > 6 ? 'loading="lazy"' }} decoding="async">
+                            <h3>{{ item.work.title }}</h3>
+                            <p>
+                                {% if oneshot %}
+                                    Oneshot
+                                {% else %}
+                                    {{ item.count }} {{ item.count == 1 ? 'chapter' : 'chapters' }} &middot; Ch. {{ item.latest.numberLabel }}
+                                {% endif %}
+                            </p>
+                        </a>
+                    </li>
                 {% endfor %}
             </ul>
         {% endif %}

@@ -7,7 +7,7 @@ Phase 4 (ingestion) committed (a033e81). PHPStan level 8 clean. Verified end to 
 
 Phase 5 (reader) built, uncommitted, verified in headless Chromium (anonymous): `/` lists works with published chapters, `/w/{slug}` lists chapters (oneshot: reader in place), `/w/{slug}/{number}` reader, `/media/page/{id}.webp` streams derivatives. 21 tests pass, PHPStan clean. Lazy loading is native `loading="lazy"` (user said continue without picking; recommended option), no Stimulus/AssetMapper yet. Phase 5 checkpoint closed 2026-10-06: oneshot extra query left as is (recommended option). User commits phase 5.
 
-Dev DB has a demo oneshot "E2E Test Work", chapter 1 published, 4 labelled pages ("Page 1", "Page 2", "Page 10", tall strip) at `/w/e2e-test-work`.
+Dev DB demo content (2026-10-08): 3 series (neon-tide 4 ch, paper-lanterns 3, ashfall 2) + 2 oneshots (the-last-train, garden-of-small-gods), all published, generated placeholder art. Old "E2E Test Work" removed (pre-scramble pages, rendered as "could not load"). Regenerate: `~/Documents/tickets/goku-symfony/ui-polish/` gen_pages.py (SVG via Chromium, zips) + upload.py (admin upload with a temp `demo-seed@goku.test` user, deleted after; works/chapters inserted by SQL, publish by SQL, worker via `messenger:consume async`).
 
 User-owned pieces left unwritten on purpose: `make check` target, smoke test in `tests/`, page position-gap helper test, phase 3 login functional test (UserFactory password is "!", so use `loginUser()` or add a hashed default). `ArchivePageOrder::sort()` + its test were meant for the user, but they asked Claude to write them and will study them later.
 
@@ -72,3 +72,12 @@ Open question to the user: trim the `LATER.md` web-installer line to what is lef
 - Deleting a chapter removes page rows (cascade) but not storage files; not handled yet.
 - Phase 5: media controller checks published (or logged in) per image request: one PK query, so drafts are not guessable by id. Published images get `public, max-age=1y, immutable` (new upload = new page ids); drafts `private, no-store`. Phase 6 keeps the PHP check and swaps the body for `X-Accel-Redirect`. All image URLs come from `PageImageUrlGenerator` (Twig `page_image_url()`). Reader filters non-ready pages in PHP, not in the fetch-join WHERE (partial collection trap). `Chapter::getNumberLabel()` drops ".0" for URLs/headings.
 - Browser testing: no Chrome MCP. Headless Chromium via Playwright in a Python venv in the scratchpad (system Node 18 too old for npm playwright; do not upgrade system Node). Cached browser at `~/.cache/ms-playwright/chromium-1208`. Run a worker with `messenger:consume async --time-limit=300` in the background.
+
+## UI polish (2026-10-08, build mode)
+- User found UI poor; chose: portrait thumb at ingest (approved exception to "no extra derivative sizes"), scope public + login/installer + EasyAdmin branding, generated demo data.
+- Thumb 400x560 WebP (`thumbs/{chapter}.webp`, `/media/thumb/{id}.webp`) from the chapter's first page, same call path as the og cover; `ImageProcessor::toCoverJpeg` became `toCover`, format from the target extension. Chapters ingested before this have no thumb (broken card image): re-ingest.
+- Home groups `findAllPublishedWithWork()` in the controller (first chapter = cover, last = latest); `WorkRepository::findPublished` removed. Series reader adds `findPublishedByWork` for prev/next: 4 queries in tests (was 3).
+- Theme tokens + buttons in `templates/theme/_base.css.twig`, inlined by public and auth layouts; accent #ff6a4d with dark text on it (white on coral fails AA). EasyAdmin: `Theme::primaryColor` + zinc grays + dark default, logo in title (EA renders title raw, name escaped).
+- Error page `templates/bundles/TwigBundle/Exception/error.html.twig`; preview in dev at `/_error/404`.
+- Status: done, 29 tests + PHPStan green, screenshots checked desktop/mobile. Not rerun: Lighthouse. Uncommitted; user commits.
+- Possible follow-ups (not done): admin list polish (Number shows "1.0", null titles show "Null" badge), reader width cap on desktop, home ordering by recency (no timestamps yet).

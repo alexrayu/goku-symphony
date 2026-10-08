@@ -80,7 +80,7 @@ final class VipsCliImageProcessor implements ImageProcessor
         }
     }
 
-    public function toCoverJpeg(string $source, string $target, int $width, int $height): void
+    public function toCover(string $source, string $target, int $width, int $height): void
     {
         $this->run([
             'vips', 'thumbnail', $source, sprintf('%s[Q=%d,keep=none]', $target, self::QUALITY), (string) $width,

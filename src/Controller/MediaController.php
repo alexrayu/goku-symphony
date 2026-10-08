@@ -51,6 +51,15 @@ final class MediaController extends AbstractController
         return $this->serve($chapter, StorageKeys::cover($chapter), 'image/jpeg', immutable: false);
     }
 
+    // Unscrambled listing thumbnail; same lifetime as the cover.
+    #[Route('/media/thumb/{id}.webp', name: 'media_thumb', requirements: ['id' => '\d+'], methods: ['GET'])]
+    public function thumbnail(int $id): BinaryFileResponse
+    {
+        $chapter = $this->em->find(Chapter::class, $id) ?? throw new NotFoundHttpException();
+
+        return $this->serve($chapter, StorageKeys::thumbnail($chapter), 'image/webp', immutable: false);
+    }
+
     private function serve(Chapter $chapter, string $key, string $contentType, bool $immutable): BinaryFileResponse
     {
         $file = $this->storagePath.'/'.$key;

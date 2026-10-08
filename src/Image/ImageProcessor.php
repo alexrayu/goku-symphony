@@ -20,7 +20,8 @@ interface ImageProcessor
     public function toScrambledWebp(string $source, string $target, int $maxWidth, int $tileSize, int $gutter): array;
 
     /**
-     * Writes an unscrambled JPEG of $source cropped to $width x $height (never upscaled), for link previews.
+     * Writes an unscrambled copy of $source cropped to $width x $height (never upscaled), for link
+     * previews and listing thumbnails. The format follows $target's extension.
      */
-    public function toCoverJpeg(string $source, string $target, int $width, int $height): void;
+    public function toCover(string $source, string $target, int $width, int $height): void;
 }

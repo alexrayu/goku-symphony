@@ -62,15 +62,18 @@ final class VipsCliImageProcessorTest extends TestCase
         }
     }
 
-    public function testCoverIsCroppedToTheRequestedBox(): void
+    public function testCoverIsCroppedToTheRequestedBoxInTheTargetFormat(): void
     {
-        $cover = $this->dir.'/cover.jpg';
-        (new VipsCliImageProcessor())->toCoverJpeg($this->tileSource(), $cover, 300, 200);
+        foreach (['cover.jpg' => 'jpegload', 'thumb.webp' => 'webpload'] as $name => $loader) {
+            $cover = $this->dir.'/'.$name;
+            (new VipsCliImageProcessor())->toCover($this->tileSource(), $cover, 300, 200);
 
-        self::assertSame(['300', '200'], [
-            $this->vips(['vipsheader', '-f', 'width', $cover]),
-            $this->vips(['vipsheader', '-f', 'height', $cover]),
-        ]);
+            self::assertSame(['300', '200', $loader], [
+                $this->vips(['vipsheader', '-f', 'width', $cover]),
+                $this->vips(['vipsheader', '-f', 'height', $cover]),
+                $this->vips(['vipsheader', '-f', 'vips-loader', $cover]),
+            ]);
+        }
     }
 
     // Distinct, well-separated greys, so lossy WebP cannot blur one tile's value into another's.

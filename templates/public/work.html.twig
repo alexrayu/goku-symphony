@@ -1,18 +1,20 @@
 {% extends 'public/layout.html.twig' %}
 
 {% set canonical = url('work_show', {slug: work.slug}) %}
+{% set first = chapters|first %}
+{% set latest = chapters|last %}
 {% set seo = {
     title: work.title ~ ' | ' ~ site_name,
     description: work.description ?: 'Read ' ~ work.title ~ ' online on ' ~ site_name ~ '.',
     canonical: canonical,
-    image: chapter_cover_url(chapters|first),
+    image: chapter_cover_url(first),
     json_ld: {
         '@context': 'https://schema.org',
         '@type': 'ComicSeries',
         name: work.title,
         description: work.description,
         url: canonical,
-        image: chapter_cover_url(chapters|first),
+        image: chapter_cover_url(first),
         hasPart: chapters|map(c => {
             '@type': 'ComicIssue',
             issueNumber: c.numberLabel,
@@ -23,14 +25,29 @@
 } %}
 
 {% block main %}
-    <main>
-        <h1>{{ work.title }}</h1>
-        {% if work.description %}<p>{{ work.description }}</p>{% endif %}
+    <main class="wrap">
+        <section class="work-head">
+            <img class="cover" src="{{ chapter_thumb_url(first) }}" alt="{{ work.title }} cover" width="400" height="560">
+            <div>
+                <span class="badge">Series</span>
+                <h1>{{ work.title }}</h1>
+                {% if work.description %}<p>{{ work.description }}</p>{% endif %}
+                <p class="muted">{{ chapters|length }} {{ chapters|length == 1 ? 'chapter' : 'chapters' }}</p>
+            </div>
+            <div class="actions">
+                <a class="button primary" href="{{ path('chapter_read', {slug: work.slug, number: first.numberLabel}) }}">Start reading</a>
+                {% if latest is not same as(first) %}
+                    <a class="button" href="{{ path('chapter_read', {slug: work.slug, number: latest.numberLabel}) }}">Latest: Chapter {{ latest.numberLabel }}</a>
+                {% endif %}
+            </div>
+        </section>
+        <h2 class="section-title">Chapters</h2>
         <ul class="list">
             {% for chapter in chapters %}
                 <li>
                     <a href="{{ path('chapter_read', {slug: work.slug, number: chapter.numberLabel}) }}">
-                        Chapter {{ chapter.numberLabel }}{% if chapter.title %}: {{ chapter.title }}{% endif %}
+                        <span class="chapter-number">Chapter {{ chapter.numberLabel }}</span>
+                        {% if chapter.title %}<span class="chapter-title">{{ chapter.title }}</span>{% endif %}
                     </a>
                 </li>
             {% endfor %}

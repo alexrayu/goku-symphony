@@ -1,0 +1,16 @@
+{% extends 'public/layout.html.twig' %}
+
+{% set not_found = status_code == 404 %}
+{% set seo = {
+    title: (not_found ? 'Page not found' : 'Something went wrong') ~ ' | ' ~ site_name,
+    description: site_description,
+    noindex: true,
+} %}
+
+{% block main %}
+    <main class="wrap error">
+        <h1>{{ status_code }}</h1>
+        <p class="muted">{{ not_found ? 'This page does not exist, or is not published yet.' : 'Something went wrong on our side. Please try again later.' }}</p>
+        <a class="button primary" href="{{ path('home') }}">Back to all works</a>
+    </main>
+{% endblock %}

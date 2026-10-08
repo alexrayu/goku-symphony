@@ -23,6 +23,12 @@ final class PageImageUrlGenerator
         return $this->urlGenerator->generate('media_page', ['id' => $page->getId()]);
     }
 
+    #[AsTwigFunction('chapter_thumb_url')]
+    public function thumbnail(Chapter $chapter): string
+    {
+        return $this->urlGenerator->generate('media_thumb', ['id' => $chapter->getId()]);
+    }
+
     // Absolute: link-preview crawlers resolve og:image without a base URL.
     #[AsTwigFunction('chapter_cover_url')]
     public function cover(Chapter $chapter): string

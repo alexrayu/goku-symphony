@@ -40,7 +40,7 @@ final class IngestPipelineTest extends KernelTestCase
     protected function tearDown(): void
     {
         $storage = static::getContainer()->get('default.storage');
-        foreach (['incoming', 'originals', 'derivatives', 'covers'] as $dir) {
+        foreach (['incoming', 'originals', 'derivatives', 'covers', 'thumbs'] as $dir) {
             $storage->deleteDirectory($dir);
         }
         (new Filesystem())->remove($this->workDir);
@@ -95,6 +95,7 @@ final class IngestPipelineTest extends KernelTestCase
             self::assertCount($tiles, explode(',', (string) $page->getTileOrder()));
         }
         self::assertTrue($storage->fileExists(StorageKeys::cover($chapter)));
+        self::assertTrue($storage->fileExists(StorageKeys::thumbnail($chapter)));
         self::assertFalse($storage->fileExists($key), 'Incoming archive is deleted after ingest.');
 
         // Prod runs as an unprivileged user and Nginx reads through the group; dev as root hides bad modes.

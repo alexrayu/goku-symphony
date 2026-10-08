@@ -34,7 +34,7 @@ final class ReaderTest extends WebTestCase
 
     protected function tearDown(): void
     {
-        foreach (['derivatives', 'covers'] as $dir) {
+        foreach (['derivatives', 'covers', 'thumbs'] as $dir) {
             static::getContainer()->get('default.storage')->deleteDirectory($dir);
         }
         parent::tearDown();
@@ -48,7 +48,8 @@ final class ReaderTest extends WebTestCase
         $crawler = $this->client->request('GET', '/');
 
         self::assertResponseIsSuccessful();
-        self::assertSame(['Visible'], $crawler->filter('ul.list a')->each(static fn ($a) => $a->text()));
+        self::assertSame(['Visible'], $crawler->filter('.shelf h3')->each(static fn ($h) => $h->text()));
+        self::assertStringStartsWith('/media/thumb/', (string) $crawler->filter('.shelf img')->attr('src'));
     }
 
     public function testSeriesListsPublishedChaptersAndHidesDrafts(): void
@@ -61,13 +62,13 @@ final class ReaderTest extends WebTestCase
         $crawler = $this->client->request('GET', '/saga');
 
         self::assertResponseIsSuccessful();
-        self::assertSame(['Chapter 1.5: Extra', 'Chapter 2'], $crawler->filter('ul.list a')->each(static fn ($a) => trim($a->text())));
+        self::assertSame(['Chapter 1.5 Extra', 'Chapter 2'], $crawler->filter('ul.list a')->each(static fn ($a) => trim($a->text())));
         self::assertSame('/saga/chapter-1.5', $crawler->filter('ul.list a')->first()->attr('href'));
         $this->client->request('GET', '/saga/chapter-3');
         self::assertResponseStatusCodeSame(404);
     }
 
-    public function testReaderShowsReadyPagesInOrderWithReservedSizeInThreeQueries(): void
+    public function testReaderShowsReadyPagesInOrderWithReservedSizeInFourQueries(): void
     {
         $work = WorkFactory::createOne(['slug' => 'saga', 'type' => WorkType::Series]);
         $chapter = ChapterFactory::createOne(['work' => $work, 'number' => '1.0', 'published' => true]);
@@ -93,12 +94,30 @@ final class ReaderTest extends WebTestCase
         self::assertStringContainsString('aspect-ratio: 800 / 3000', (string) $pages->eq(0)->attr('style'));
         self::assertStringStartsWith('/media/page/', (string) $pages->eq(0)->attr('data-src'));
 
-        // Installed check + work by slug + chapter with pages (fetch join). An N+1 would grow with pages.
+        // Installed check + work by slug + chapter list (previous/next) + chapter with pages (fetch join).
+        // An N+1 would grow with pages.
         $profile = $this->client->getProfile();
         self::assertInstanceOf(Profile::class, $profile);
         $db = $profile->getCollector('db');
         self::assertInstanceOf(DoctrineDataCollector::class, $db);
-        self::assertSame(3, $db->getQueryCount());
+        self::assertSame(4, $db->getQueryCount());
+    }
+
+    public function testReaderLinksPreviousAndNextPublishedChapters(): void
+    {
+        $work = WorkFactory::createOne(['slug' => 'saga', 'type' => WorkType::Series]);
+        foreach (['1.0' => true, '2.0' => true, '2.5' => false, '3.0' => true] as $number => $published) {
+            ChapterFactory::createOne(['work' => $work, 'number' => (string) $number, 'published' => $published]);
+        }
+
+        $crawler = $this->client->request('GET', '/saga/chapter-2');
+        self::assertSame(
+            [['Previous', '/saga/chapter-1'], ['All chapters', '/saga'], ['Next', '/saga/chapter-3']],
+            $crawler->filter('.reader-head .chapter-nav a')->each(static fn ($a) => [$a->text(), $a->attr('href')]),
+        );
+
+        $crawler = $this->client->request('GET', '/saga/chapter-1');
+        self::assertSame(['All chapters', 'Next'], $crawler->filter('.reader-head .chapter-nav a')->each(static fn ($a) => $a->text()));
     }
 
     public function testOneshotIsReadOnTheWorkPage(): void
@@ -139,20 +158,26 @@ final class ReaderTest extends WebTestCase
         self::assertStringContainsString('no-store', (string) $this->client->getResponse()->headers->get('Cache-Control'));
     }
 
-    public function testCoverIsServedPerChapterAndHiddenForDrafts(): void
+    public function testCoverAndThumbnailAreServedPerChapterAndHiddenForDrafts(): void
     {
         $published = ChapterFactory::createOne(['published' => true]);
         $draft = ChapterFactory::createOne(['published' => false]);
         $storage = static::getContainer()->get('default.storage');
-        $storage->write(StorageKeys::cover($published), 'jpeg-bytes');
-        $storage->write(StorageKeys::cover($draft), 'jpeg-bytes');
+        $media = [
+            ['/media/cover/%d.jpg', StorageKeys::cover(...), 'image/jpeg'],
+            ['/media/thumb/%d.webp', StorageKeys::thumbnail(...), 'image/webp'],
+        ];
+        foreach ($media as [$url, $key, $type]) {
+            $storage->write($key($published), 'bytes');
+            $storage->write($key($draft), 'bytes');
 
-        $this->client->request('GET', sprintf('/media/cover/%d.jpg', $published->getId()));
-        self::assertResponseIsSuccessful();
-        self::assertResponseHeaderSame('Content-Type', 'image/jpeg');
-        self::assertStringNotContainsString('immutable', (string) $this->client->getResponse()->headers->get('Cache-Control'));
+            $this->client->request('GET', sprintf($url, $published->getId()));
+            self::assertResponseIsSuccessful();
+            self::assertResponseHeaderSame('Content-Type', $type);
+            self::assertStringNotContainsString('immutable', (string) $this->client->getResponse()->headers->get('Cache-Control'));
 
-        $this->client->request('GET', sprintf('/media/cover/%d.jpg', $draft->getId()));
-        self::assertResponseStatusCodeSame(404);
+            $this->client->request('GET', sprintf($url, $draft->getId()));
+            self::assertResponseStatusCodeSame(404);
+        }
     }
 }
