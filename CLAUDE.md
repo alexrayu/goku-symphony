@@ -68,5 +68,6 @@ Paged/RTL reader, reading progress, follows, search, comments, likes, ratings, c
 - Composer's global GitHub token may be stale (Flex recipe 404s); use a clean `COMPOSER_HOME`.
 - Do not set `config.platform.php` below the container's PHP patch version.
 - `versions.env` is passed via `--env-file`; Compose's default `.env` is Symfony's.
+- Never `%env(resolve:DATABASE_URL)%`: `resolve:` reads URL-encoded password bytes (`%24...%`) as a container parameter and every page 500s (found in goku-shared).
 - Image-quality checks (scrambling, seams, compression): test gradients and colour in the real browser, not only text on white. Text-on-white hid tile seams that showed in the reader.
 - Dev DB pages ingested before a derivative-format change (scrambling, thumbs) render broken. Re-ingest demo content before judging the UI; generator and uploader in `~/Documents/tickets/goku-symfony/ui-polish/`.
